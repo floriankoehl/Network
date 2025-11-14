@@ -15,7 +15,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useNavigate } from 'react-router-dom';
 
 
-const BASE_URL = "http://192.168.178.200:8000"
+const BASE_URL = "https://api.floriankoehl.com";
+
 
 
 export default function InputAdornments() {

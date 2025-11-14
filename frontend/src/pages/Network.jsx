@@ -3,7 +3,8 @@ import { useLoaderData } from "react-router-dom"
 import UserCard from "../components/UserCard"
 
 
-const BASE_URL = "http://192.168.178.200:8000"
+const BASE_URL = "https://api.floriankoehl.com";
+
 
 export async function all_user_loader(){
     const res = await fetch(`${BASE_URL}/api/users/all`)

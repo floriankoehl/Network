@@ -6,7 +6,8 @@ import { useState } from "react";
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
 
 
-const BASE_URL = "http://192.168.178.200:8000"
+const BASE_URL = "https://api.floriankoehl.com";
+
 
 export async function profile_loader(object){
     
