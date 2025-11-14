@@ -3,10 +3,10 @@ import { useLoaderData } from "react-router-dom"
 import UserCard from "../components/UserCard"
 
 
-
+const BASE_URL = "http://192.168.178.200:8000"
 
 export async function all_user_loader(){
-    const res = await fetch("http://127.0.0.1:8000/api/users/all")
+    const res = await fetch(`${BASE_URL}/api/users/all`)
     if (!res.ok) {
         throw new Error("Something went wrong")
     }

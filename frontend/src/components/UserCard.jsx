@@ -23,7 +23,7 @@ export default function UserCard({id, name}) {
         {name}
       </CardContent>
       <CardActions>
-        <Link to={`/profile/${id}`}><Button size="small">Learn More</Button></Link>
+        <Link to={`/profile/${id}/`}><Button size="small">Learn More</Button></Link>
         
       </CardActions>
     </Card>
