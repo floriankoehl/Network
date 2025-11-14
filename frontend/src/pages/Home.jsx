@@ -20,7 +20,9 @@ export default function InputAdornments() {
       <div>
         
        
-        <h1>HOME</h1>
+        <h1>Hallo Philipp, das läuft am Raspberry pi amk
+          
+        </h1>
         
       </div>
    
