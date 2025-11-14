@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router-dom"
 import UserCard from "../components/UserCard"
 
 
-import { BASE_URL } from "../config/api"; // Pfad anpassen falls nötig
+import { BASE_URL } from "../config/api";// Pfad anpassen falls nötig
 
 export async function all_user_loader() {
   const res = await fetch(`${BASE_URL}/api/users/all`);
