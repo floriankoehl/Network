@@ -58,7 +58,11 @@ MIDDLEWARE = [
 
 
 CORS_ALLOW_ALL_ORIGINS = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '192.168.178.200',   # <-- IP vom Pi
+]
 
 
 CSRF_TRUSTED_ORIGINS = [
