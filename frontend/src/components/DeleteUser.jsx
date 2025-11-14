@@ -3,6 +3,8 @@ import Button from '@mui/material/Button';
 import { useNavigate } from 'react-router-dom';
 
 
+const BASE_URL = "http://192.168.178.200:8000"
+
 export default function DeleteUser({id}){
     const navigate = useNavigate();
 
@@ -11,7 +13,7 @@ export default function DeleteUser({id}){
     async function delete_user(){
         const delete_this_id = {id}
 
-        const res = await fetch(`http://127.0.0.1:8000/api/users/delete/`, {
+        const res = await fetch(`${BASE_URL}/api/users/delete/`, {
             method: "POST",
             headers: {
                 "content-type": "application/json"

@@ -22,7 +22,7 @@ export async function profile_loader(object){
 }
 
 
-
+const BASE_URL = "http://192.168.178.200:8000"
 
 
 
@@ -47,7 +47,7 @@ export default function Profile(){
         setEdit(false)
         const this_name = {id: data.id, newName}
 
-        const res = await fetch(`http://127.0.0.1:8000/api/users/change_name/`, {
+        const res = await fetch(`${BASE_URL}/api/users/change_name/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

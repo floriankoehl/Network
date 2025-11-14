@@ -15,6 +15,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useNavigate } from 'react-router-dom';
 
 
+const BASE_URL = "http://192.168.178.200:8000"
+
+
 export default function InputAdornments() {
     const [showPassword, setShowPassword] = useState(false);
     const [password_first, setPassword_first] = useState("...");
@@ -46,7 +49,7 @@ export default function InputAdornments() {
 
             const data = { username, password_first, password_second }
 
-            const response = await fetch("http://127.0.0.1:8000/api/users/create", {
+            const response = await fetch(`${BASE_URL}/api/users/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
