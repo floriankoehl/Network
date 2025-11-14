@@ -10,13 +10,13 @@ import AcUnitIcon from '@mui/icons-material/AcUnit';
 
 
 export default function Header() {
-  const [showheader, setShowHeader] = useState(false);
+  const [showheader, setShowHeader] = useState(true);
 
   return (
     <div
       className="h-15 w-screen mb-15"
       onMouseOver={() => setShowHeader(true)}
-      onMouseLeave={() => setShowHeader(false)}
+      onMouseLeave={() => setShowHeader(true)}
     >
       {showheader && (
         <nav className="relative flex items-center justify-center gap-10 mt-2">
