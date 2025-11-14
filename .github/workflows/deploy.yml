@@ -1,0 +1,22 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main   # falls dein Hauptbranch anders heißt: hier anpassen
+
+jobs:
+  deploy:
+    runs-on: self-hosted   # nutzt deinen Raspberry-Runner
+
+    steps:
+      - name: Pull latest code on Raspberry Pi
+        run: |
+          cd /home/floriankoehl/Network
+          git pull
+
+      - name: Rebuild and restart Docker containers
+        run: |
+          cd /home/floriankoehl/Network
+          docker compose up --build -d
+
