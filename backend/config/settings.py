@@ -59,14 +59,12 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    '192.168.178.200',        # falls du die schon drin hattest
-    'api.floriankoehl.com',
-    'app.floriankoehl.com',
+    "127.0.0.1",
+    "localhost",
+    "192.168.178.200",
+    "api.floriankoehl.com",
+    "app.floriankoehl.com",
 ]
-
-
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -74,6 +72,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://app.floriankoehl.com",
     "https://api.floriankoehl.com",
 ]
+
 
 
 ROOT_URLCONF = 'config.urls'
