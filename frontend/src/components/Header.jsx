@@ -8,6 +8,7 @@ import Avatar from '@mui/material/Avatar';
 import LoginIcon from '@mui/icons-material/Login';
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import WbIridescentIcon from '@mui/icons-material/WbIridescent';
 
 //
 export default function Header() {
@@ -20,7 +21,7 @@ export default function Header() {
       onMouseLeave={() => setShowHeader(true)}
     >
       {showheader && (
-        <nav className="relative flex items-center justify-center gap-10 mt-2">
+        <nav className="relative flex items-center justify-center gap-1 mt-2">
           {/* Home */}
           <NavLink
             to="/"
@@ -83,6 +84,18 @@ export default function Header() {
             {({ isActive }) => (
               <Fab color={isActive ? "primary" : "default"} variant="extended">
                 <VpnKeyIcon />
+              </Fab>
+            )}
+          </NavLink>
+          <NavLink
+            to="/graph"
+            className={({ isActive }) =>
+              isActive ? "scale-110 transition-transform" : "opacity-70 hover:opacity-100"
+            }
+          >
+            {({ isActive }) => (
+              <Fab color={isActive ? "primary" : "default"} variant="extended">
+                <WbIridescentIcon />
               </Fab>
             )}
           </NavLink>

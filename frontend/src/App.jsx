@@ -5,6 +5,7 @@ import Register from "./pages/Register.jsx";
 import Network, {all_user_loader} from "./pages/Network.jsx";
 import Profile, {profile_loader} from "./pages/Profile.jsx";
 import Login from "./pages/Login.jsx"
+import Graph from "./pages/Graph.jsx";
 import { Link } from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -15,7 +16,8 @@ const router = createBrowserRouter([
       { index: true, element: <Home />, loader:  comment_loader},
       { path:"/register", element: <Register/>},
       { path:"/login", element: <Login/>},
-      { path:"/network", element: <Network/>, loader: all_user_loader},   
+      { path:"/network", element: <Network/>, loader: all_user_loader},
+      { path:"/graph", element: <Graph/>},     
       {
     path: "/profile",
     element: <Profile />,
