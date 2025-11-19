@@ -1,7 +1,16 @@
 import bg from "../assets/bg_1.jpg";
 import Avatar from '@mui/material/Avatar';
 import profilePic from "../assets/profile_pic.png";
-import { useState } from "react";
+import Roadmap from "../assets/roadmap.jpg";
+import path_bg from "../assets/path.jpg";
+import Github from "../components/Github.jsx";
+import GithubStats from "../components/GithubStats";
+import GithubHeatmapIcon from "../components/GithubHeatmapIcon";
+
+
+
+
+import { useState, useRef, useEffect } from "react";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 
@@ -9,15 +18,33 @@ import TouchAppIcon from '@mui/icons-material/TouchApp';
 export default function Landing() {
     const [sizeIcon, setSizeIcon] = useState(90);
     const [clicked, setClicked] = useState(false);
-    const [click_socials, setClick_Socials] = useState(false);
+    const [roadmapflag, setRoadmapflag] = useState(true);
+    const roadmapRef = useRef(null);
+
+    const scrollToRoadmap = () => {
+        roadmapRef.current?.scrollIntoView({
+            behavior: "smooth",   // smooth animation
+            block: "start",       // align to top of viewport
+        });
+    };
+
 
     function changeSizeIcon(newSize) {
         setSizeIcon(newSize);
     }
 
+    useEffect(() => {
+        if (roadmapflag) {
+            roadmapRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        }
+    }, [roadmapflag]);
+
     return (
         <>
-            
+
             <div
                 className="relative h-screen w-full"
                 style={{
@@ -30,10 +57,10 @@ export default function Landing() {
 
                 <div className="relative z-10 flex flex-col gap-10 items-center justify-center h-full">
                     <div className="min-h-1/4 flex flex-col items-center justify-end flex-col gap-10">
-                    
-                        <div 
-                        onClick={()=>{if (!clicked) {setClicked(true)} else {setClicked(false)}}}
-                        className={`relative
+
+                        <div
+                            onClick={() => { if (!clicked) { setClicked(true) } else { setClicked(false) } }}
+                            className={`relative
                                     bg-black/15
                                     
                                     backdrop-blur-lg 
@@ -60,19 +87,20 @@ export default function Landing() {
 
                                     ${clicked ? "-translate-y-10" : ""}
                                     `}
-                                    onMouseOver={()=>{changeSizeIcon(92)}}
-                                    onMouseLeave={()=>{changeSizeIcon(90)}}
-                                    >
-                                        <Avatar className="relative  p-1" sx={{
-                        width: `${sizeIcon}px`,
-                        height: `${sizeIcon}px`,
-                        bgcolor: 'white',
-                    }} alt="Florian Köhl" src={profilePic} />
-                        <h1  className=" font-semibold">Florian Köhl</h1>
-                        {!clicked && <TouchAppIcon className="animate-bounce text-white opacity-80 !h-[40px] !w-[40px] absolute bottom-0 right-5 translate-y-8/10"/>
-}
-                    </div>
-                    
+                            onMouseOver={() => { changeSizeIcon(92) }}
+                            onMouseLeave={() => { changeSizeIcon(90) }}
+                        >
+                            <Avatar className="relative  p-1" sx={{
+                                width: `${sizeIcon}px`,
+                                height: `${sizeIcon}px`,
+                                bgcolor: 'white',
+                            }} alt="Florian Köhl" src={profilePic} />
+                            <h1 className=" font-semibold">Florian Köhl</h1>
+                            {!clicked && <TouchAppIcon
+                                className="animate-bounce text-white opacity-80 !h-[40px] !w-[40px] absolute bottom-0 right-5 translate-y-8/10"
+                            />}
+                        </div>
+
                     </div>
 
 
@@ -97,12 +125,18 @@ export default function Landing() {
                             Projects, ideas and experiments that shaped my path so far.
                         </p>
 
-                        
+
 
                     </div>
 
 
                     <div
+                        onClick={() => {
+                            if (!roadmapflag) {
+                                setRoadmapflag(true);
+                            }
+                            scrollToRoadmap();
+                        }}
                         className={`
                                     absolute
                                     bottom-10
@@ -118,11 +152,13 @@ export default function Landing() {
                                     h-15
                                     flex items-center justify-center
 
+
+                                    hover:bg-white/20    
                                     transition-all duration-300 ease-out
                                     ${clicked ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
                                 `}
                     >
-                        <KeyboardArrowDownIcon className="animate-bounce text-white opacity-80 !h-[40px] !w-[40px] translate-y-[5px]"  cx/>
+                        <KeyboardArrowDownIcon className="animate-bounce text-white opacity-80 !h-[40px] !w-[40px] translate-y-[5px]" cx />
                     </div>
 
 
@@ -130,8 +166,80 @@ export default function Landing() {
 
 
                 </div>
-            </div>
+                <div className={`relative 
+                                h-1
+                                bg-white
+                                ${roadmapflag ? "opacity-100 scale-100 " : "opacity-0 scale-95 pointer-events-none hidden"}
+                                `}></div>
+                <div
+                    ref={roadmapRef}
+                    className={`relative 
+                                min-h-screen
+                                w-full 
+                                ${roadmapflag ? "opacity-100 scale-100 " : "opacity-0 scale-95 pointer-events-none hidden"}
+                                `}
 
+
+                    style={{
+                        backgroundImage: `url(${path_bg})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                    }}
+
+                >
+
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-10">
+                        <div className="
+                    
+                               
+                                    inset-0 
+                                    bg-gradient-to-b
+                                    from-white/5 
+                                    via-white/20 
+                                    to-white/10
+                                    backdrop-blur-lg
+
+                                    shadow-[0_0_150px_rgba(255,255,255,0.15)]
+                                    border border-white/20
+                                    rounded-2xl
+                                    p-6
+                                    text-center
+                                    text-white
+                                    shadow-2xl
+                                    w-8/10
+                                    
+                                    flex items-center justify-center
+                    ">
+
+
+                            <div className=" w-full max-w-5xl mx-auto">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                   
+
+                                    {/* Bottom row left */}
+                                    <div>
+                                        <Github />
+                                    </div>
+
+                                    {/* Bottom row right */}
+                                    <div>
+                                        <GithubStats />
+                                    </div>
+                                     {/* Heatmap */}
+                                    <div className=" hidden md:block flex items-center justify-center md:col-span-2 ">
+                                        <GithubHeatmapIcon username="floriankoehl" variant="large" />
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
         </>
     );
 };
