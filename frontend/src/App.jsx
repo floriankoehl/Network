@@ -7,8 +7,10 @@ import Profile, {profile_loader} from "./pages/Profile.jsx";
 import Login from "./pages/Login.jsx"
 // import Graph from "./pages/Graph.jsx";
 // import Graph_2 from "./pages/Graph_2/Graph_2.jsx";
+import Graph_3 from "./pages/Graph_2/Graph_3.jsx";
 import { Link } from "react-router-dom";
 import Landing from "./pages/Landing.jsx";
+import GraphWrapper from "./pages/Graph_2/GraphWrapper.jsx";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +24,7 @@ const router = createBrowserRouter([
       { path:"/network", element: <Network/>, loader: all_user_loader},
       // { path:"/graph", element: <Graph/>},  
       // { path:"/graph_2", element: <Graph_2/>},   
+      { path:"/graph_3", element: <GraphWrapper/>},  
       {
     path: "/profile",
     element: <Profile />,
