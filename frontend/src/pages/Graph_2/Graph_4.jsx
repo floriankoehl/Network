@@ -23,50 +23,316 @@ const initialEdges = [
 
 
 //Defining Layout in Star Format
+// function starLayout(nodes, mainNodeId) {
+//     const centerX = 0;
+//     const centerY = 0;
+//     const radius = 400;
+
+//     if (!nodes || nodes.length === 0) return [];
+
+//     // Versuche, den gewünschten Main-Node zu finden
+//     let mainNode = nodes.find((n) => n.id === mainNodeId);
+
+//     // 🔥 Fallback: wenn der gewünschte Main-Node in diesem Batch nicht vorkommt,
+//     // nimm einfach den ersten Node als Zentrum
+//     if (!mainNode) {
+//         mainNode = nodes[0];
+//     }
+
+//     const others = nodes.filter((n) => n.id !== mainNode.id);
+
+//     const angleStep = others.length > 0 ? (2 * Math.PI) / others.length : 0;
+
+//     const positionedNodes = nodes.map((node) => {
+//         if (node.id === mainNode.id) {
+//             return {
+//                 ...node,
+//                 position: { x: centerX, y: centerY },
+//             };
+//         }
+
+//         const index = others.findIndex((n) => n.id === node.id);
+//         const angle = index * angleStep;
+
+//         const x = centerX + radius * Math.cos(angle);
+//         const y = centerY + radius * Math.sin(angle);
+
+//         return {
+//             ...node,
+//             position: { x, y },
+//         };
+//     });
+
+//     return positionedNodes;
+// }
+
+// function starLayout(nodes, mainNodeId) {
+//   const centerX = 0;
+//   const centerY = 0;
+//   const radius = 400;
+
+//   if (!nodes || nodes.length === 0) return [];
+
+//   // try to find the desired main node
+//   let mainNode = nodes.find((n) => n.id === mainNodeId);
+
+//   // fallback: if that main node is not in this batch, use the first node
+//   if (!mainNode) {
+//     mainNode = nodes[0];
+//   }
+
+//   const others = nodes.filter((n) => n.id !== mainNode.id);
+//   const angleStep = others.length > 0 ? (2 * Math.PI) / others.length : 0;
+
+//   const positionedNodes = nodes.map((node) => {
+//     // 👉 keep existing position if it’s not (0,0) and not the main node
+//     const hasCustomPosition =
+//       node.position &&
+//       (node.position.x !== 0 || node.position.y !== 0);
+
+//     if (node.id !== mainNode.id && hasCustomPosition) {
+//       return node;
+//     }
+
+//     // center the main node
+//     if (node.id === mainNode.id) {
+//       return {
+//         ...node,
+//         position: { x: centerX, y: centerY },
+//       };
+//     }
+
+//     // place only "un-positioned" others in a circle
+//     const index = others.findIndex((n) => n.id === node.id);
+//     const angle = index * angleStep;
+
+//     const x = centerX + radius * Math.cos(angle);
+//     const y = centerY + radius * Math.sin(angle);
+
+//     return {
+//       ...node,
+//       position: { x, y },
+//     };
+//   });
+
+//   return positionedNodes;
+// }
+// function starLayout(nodes, mainNodeId) {
+//   const centerX = 0;
+//   const centerY = 0;
+//   const rootRadius = 400;   // distance around root
+//   const childRadius = 250;  // distance around parent for children
+
+//   if (!nodes || nodes.length === 0) return [];
+
+//   // find "main" node (the one we expanded from)
+//   let mainNode = nodes.find((n) => n.id === mainNodeId);
+//   if (!mainNode) {
+//     mainNode = nodes[0];
+//   }
+
+//   // helper: does this node already have a real position?
+//   const hasCustomPosition = (node) =>
+//     node.position &&
+//     (node.position.x !== 0 || node.position.y !== 0);
+
+//   const mainPos = mainNode.position || { x: 0, y: 0 };
+//   const isRootLike = mainPos.x === 0 && mainPos.y === 0;
+
+//   // root case: full 360° around main
+//   if (isRootLike) {
+//     const others = nodes.filter((n) => n.id !== mainNode.id);
+//     const angleStep = others.length > 0 ? (2 * Math.PI) / others.length : 0;
+
+//     return nodes.map((node) => {
+//       if (node.id === mainNode.id) {
+//         return {
+//           ...node,
+//           position: { x: centerX, y: centerY },
+//         };
+//       }
+
+//       // keep existing position if it’s already set (from previous layouts)
+//       if (hasCustomPosition(node)) {
+//         return node;
+//       }
+
+//       const index = others.findIndex((n) => n.id === node.id);
+//       const angle = index * angleStep;
+
+//       const x = centerX + rootRadius * Math.cos(angle);
+//       const y = centerY + rootRadius * Math.sin(angle);
+
+//       return {
+//         ...node,
+//         position: { x, y },
+//       };
+//     });
+//   }
+
+//   // child case: lay out only NEW children in a half-circle around the parent
+//   const others = nodes.filter((n) => n.id !== mainNode.id);
+//   const fixedOthers = others.filter((n) => hasCustomPosition(n));
+//   const newChildren = others.filter((n) => !hasCustomPosition(n));
+
+//   // angle of parent relative to root (0,0)
+//   const baseAngle = Math.atan2(mainPos.y, mainPos.x);
+//   const spread = Math.PI; // 180° half-circle
+//   const angleStep =
+//     newChildren.length > 1 ? spread / (newChildren.length - 1) : 0;
+//   const startAngle = baseAngle - spread / 2;
+
+//   return nodes.map((node) => {
+//     // keep main node exactly where it is
+//     if (node.id === mainNode.id) {
+//       return {
+//         ...node,
+//         position: mainPos,
+//       };
+//     }
+
+//     // keep already positioned nodes as they are
+//     if (hasCustomPosition(node)) {
+//       return node;
+//     }
+
+//     // this is a new child of the main node → place on half-circle
+//     const index = newChildren.findIndex((n) => n.id === node.id);
+//     if (index === -1) {
+//       // safety fallback
+//       return node;
+//     }
+
+//     const angle = startAngle + index * angleStep;
+//     const x = mainPos.x + childRadius * Math.cos(angle);
+//     const y = mainPos.y + childRadius * Math.sin(angle);
+
+//     return {
+//       ...node,
+//       position: { x, y },
+//     };
+//   });
+// }
+
 function starLayout(nodes, mainNodeId) {
-    const centerX = 0;
-    const centerY = 0;
-    const radius = 400;
+  const centerX = 0;
+  const centerY = 0;
+  const rootRadius = 400;   // Abstand um die Root
+  const childRadius = 350;  // Abstand um den Parent
 
-    if (!nodes || nodes.length === 0) return [];
+  if (!nodes || nodes.length === 0) return [];
 
-    // Versuche, den gewünschten Main-Node zu finden
-    let mainNode = nodes.find((n) => n.id === mainNodeId);
+  // Helper: hat der Node schon eine "echte" Position?
+  const hasCustomPosition = (node) =>
+  node.position &&
+  (
+    node.position.x !== 0 ||
+    node.position.y !== 0 ||
+    node.type === "main_company_display" // Root immer als „fix“ behandeln
+  );
 
-    // 🔥 Fallback: wenn der gewünschte Main-Node in diesem Batch nicht vorkommt,
-    // nimm einfach den ersten Node als Zentrum
-    if (!mainNode) {
-        mainNode = nodes[0];
-    }
 
+  // Main node in diesem Batch
+  let mainNode = nodes.find((n) => n.id === mainNodeId);
+  if (!mainNode) {
+    mainNode = nodes[0];
+  }
+
+  const mainPos = mainNode.position || { x: 0, y: 0 };
+  const isRootLike = mainPos.x === 0 && mainPos.y === 0;
+
+  // 🟠 FALL 1: Root-Layout (Root sitzt im Zentrum, Kinder im ganzen Kreis)
+  if (isRootLike) {
     const others = nodes.filter((n) => n.id !== mainNode.id);
-
     const angleStep = others.length > 0 ? (2 * Math.PI) / others.length : 0;
 
-    const positionedNodes = nodes.map((node) => {
-        if (node.id === mainNode.id) {
-            return {
-                ...node,
-                position: { x: centerX, y: centerY },
-            };
-        }
-
-        const index = others.findIndex((n) => n.id === node.id);
-        const angle = index * angleStep;
-
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
-
+    return nodes.map((node) => {
+      if (node.id === mainNode.id) {
+        // Root in die Mitte, branchAngle = 0
         return {
-            ...node,
-            position: { x, y },
+          ...node,
+          position: { x: centerX, y: centerY },
+          data: {
+            ...(node.data ?? {}),
+            branchAngle: 0,
+          },
         };
+      }
+
+      // wenn Node schon irgendwo platziert wurde → nicht anfassen
+      if (hasCustomPosition(node)) {
+        return node;
+      }
+
+      const index = others.findIndex((n) => n.id === node.id);
+      const angle = index * angleStep;
+
+      const x = centerX + rootRadius * Math.cos(angle);
+      const y = centerY + rootRadius * Math.sin(angle);
+
+      return {
+        ...node,
+        position: { x, y },
+        // 👉 für alle direkten Root-Kinder den branchAngle speichern
+        data: {
+          ...(node.data ?? {}),
+          branchAngle: angle,
+        },
+      };
     });
+  }
 
-    return positionedNodes;
+  // 🟠 FALL 2: Parent-Layout (Kinder im Halbkreis in Richtung des Parents)
+  const others = nodes.filter((n) => n.id !== mainNode.id);
+  const newChildren = others.filter((n) => !hasCustomPosition(n));
+
+  // Basis-Winkel: erst aus gespeicherter branchAngle, sonst aus Position
+  const baseAngle =
+    mainNode.data?.branchAngle ??
+    Math.atan2(mainPos.y - centerY, mainPos.x - centerX);
+
+  const spread = (140 * Math.PI) / 180; // ~140° statt 180°
+
+  const angleStep =
+    newChildren.length > 1 ? spread / (newChildren.length - 1) : 0;
+  const startAngle = baseAngle - spread / 2;
+
+  return nodes.map((node) => {
+    // Parent bleibt, wo er ist
+    if (node.id === mainNode.id) {
+      return {
+        ...node,
+        position: mainPos,
+      };
+    }
+
+    // Alles, was schon eine Position hat, wird nicht angerührt
+    if (hasCustomPosition(node)) {
+      return node;
+    }
+
+    // Neue Kinder um den Parent im Halbkreis
+    const index = newChildren.findIndex((n) => n.id === node.id);
+    if (index === -1) {
+      return node;
+    }
+
+    const angle = startAngle + index * angleStep;
+    const x = mainPos.x + childRadius * Math.cos(angle);
+    const y = mainPos.y + childRadius * Math.sin(angle);
+
+    return {
+      ...node,
+      position: { x, y },
+      data: {
+        ...(node.data ?? {}),
+        // 👉 Winkel dieses „Arms“ speichern, damit seine Kinder später
+        // in derselben Richtung weiterwachsen können
+        branchAngle: angle,
+      },
+    };
+  });
 }
-
-
 
 
 // Defining Custom Nodes 
@@ -263,98 +529,293 @@ export default function Graph_4() {
 
 
     // Fetching a single company by id
-    async function fetchCompany(id) {
-        const response = await fetch(`https://apibizray.bnbdevelopment.hu/api/v1/network/${id}`);
+//     async function fetchCompany(id) {
+//         const response = await fetch(`https://apibizray.bnbdevelopment.hu/api/v1/network/${id}`);
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch company data");
-        }
-        const data = await response.json();
-        // console.log("Fetched company data: ", data);
-
-
-        const company = data.company
-        const mainId = company.firmenbuchnummer;
+//         if (!response.ok) {
+//             throw new Error("Failed to fetch company data");
+//         }
+//         const data = await response.json();
+//         // console.log("Fetched company data: ", data);
 
 
-        // 🔥 Root nur einmal setzen (beim ersten Fetch)
-        if (!rootId) {
-            setRootId(mainId);
-        }
-
-        // Welche ID gilt aktuell als "Main" im Layout?
-        const effectiveMainId = rootId ?? mainId;
-
-        const rawNodes = company.nodes.map((node) => {
-            const isMain = node.id === effectiveMainId;
-
-            const createdNode = {
-                id: node.id,
-                type: isMain
-                    ? "main_company_display"
-                    : "default_company_display",
-                position: { x: 0, y: 0 },
-                data: { label: node.label }
-            };
-            return createdNode;
-        });
-
-        const rawEdges = company.edges.map((edge) => {
-            const createdEdge = {
-                id: `${edge.source}-${edge.target}`,
-                source: edge.source,
-                target: edge.target,
-                type: "straight",
-                data: { label: edge.label },
-                animated: true
-            };
-
-            return createdEdge;
-        });
-
-        // 🔥 Layout immer um die ursprüngliche Root zentrieren
-        const positionedNodes = starLayout(rawNodes, effectiveMainId);
+//         const company = data.company
+//         const mainId = company.firmenbuchnummer;
 
 
-        updateGraphData(positionedNodes, rawEdges)
-        //{id: '2', position: {x:100, y:100}, data: {label: 'Node 2'}},
-        // {id: 'e1-2', source: '1', target: '2', animated: true},
+//         // 🔥 Root nur einmal setzen (beim ersten Fetch)
+//         if (!rootId) {
+//             setRootId(mainId);
+//         }
+
+//         // Welche ID gilt aktuell als "Main" im Layout?
+//         const effectiveMainId = rootId ?? mainId;
 
 
-        // 🔍 Neue Child-IDs ermitteln: alle, die nicht mainId sind
-        // und noch NICHT im aktuellen visibleNodeIds-Set enthalten sind
-        const newChildIds = positionedNodes
-            .map((n) => n.id)
-            .filter((id) => id !== mainId && !visibleNodeIds.has(id));
-
-        // 🧬 childrenByParent-Eintrag für mainId aktualisieren
-        setChildrenByParent((prev) => {
-            const prevChildrenSet = prev[mainId] ?? new Set();
-            const updatedChildrenSet = new Set(prevChildrenSet);
-
-            newChildIds.forEach((id) => {
-                updatedChildrenSet.add(id);
-            });
-
-            return {
-                ...prev,
-                [mainId]: updatedChildrenSet,
-            };
-        });
+//         // map of existing nodes by id – so we can reuse their positions
+// const existingById = new Map(nodes.map((n) => [n.id, n]));
 
 
-        // 🔥 alle Nodes aus diesem Fetch zur Sichtbarkeit dazu nehmen (nicht überschreiben)
-        setVisibleNodeIds((prev) => {
-            const next = new Set(prev);
-            positionedNodes.forEach((n) => next.add(n.id));
-            return next;
-        });
+//         const rawNodes = company.nodes.map((node) => {
+//   const existing = existingById.get(node.id);
+
+//   if (existing) {
+//     // 👉 keep existing type, position, etc., but update the label
+//     return {
+//       ...existing,
+//       data: {
+//         ...existing.data,
+//         label: node.label,
+//       },
+//     };
+//   }
+
+//   // new node
+//   const isMain = node.id === effectiveMainId;
+
+//   const createdNode = {
+//     id: node.id,
+//     type: isMain ? "main_company_display" : "default_company_display",
+//     position: { x: 0, y: 0 }, // gets layouted later
+//     data: { label: node.label },
+//   };
+
+//   return createdNode;
+// });
+
+
+//         const rawEdges = company.edges.map((edge) => {
+//             const createdEdge = {
+//                 id: `${edge.source}-${edge.target}`,
+//                 source: edge.source,
+//                 target: edge.target,
+//                 type: "straight",
+//                 data: { label: edge.label },
+//                 animated: true
+//             };
+
+//             return createdEdge;
+//         });
+
+//         // 🔥 Layout immer um die ursprüngliche Root zentrieren
+//         const positionedNodes = starLayout(rawNodes, effectiveMainId);
+
+
+//         updateGraphData(positionedNodes, rawEdges)
+//         //{id: '2', position: {x:100, y:100}, data: {label: 'Node 2'}},
+//         // {id: 'e1-2', source: '1', target: '2', animated: true},
+
+
+//         // 🔍 Neue Child-IDs ermitteln: alle, die nicht mainId sind
+//         // und noch NICHT im aktuellen visibleNodeIds-Set enthalten sind
+//         const newChildIds = positionedNodes
+//             .map((n) => n.id)
+//             .filter((id) => id !== mainId && !visibleNodeIds.has(id));
+
+//         // 🧬 childrenByParent-Eintrag für mainId aktualisieren
+//         setChildrenByParent((prev) => {
+//             const prevChildrenSet = prev[mainId] ?? new Set();
+//             const updatedChildrenSet = new Set(prevChildrenSet);
+
+//             newChildIds.forEach((id) => {
+//                 updatedChildrenSet.add(id);
+//             });
+
+//             return {
+//                 ...prev,
+//                 [mainId]: updatedChildrenSet,
+//             };
+//         });
+
+
+//         // 🔥 alle Nodes aus diesem Fetch zur Sichtbarkeit dazu nehmen (nicht überschreiben)
+//         setVisibleNodeIds((prev) => {
+//             const next = new Set(prev);
+//             positionedNodes.forEach((n) => next.add(n.id));
+//             return next;
+//         });
 
 
 
 
 
-    }
+//     }
+
+// async function fetchCompany(id) {
+//   const response = await fetch(`https://apibizray.bnbdevelopment.hu/api/v1/network/${id}`);
+
+//   if (!response.ok) {
+//     throw new Error("Failed to fetch company data");
+//   }
+//   const data = await response.json();
+
+//   const company = data.company;
+//   const mainId = company.firmenbuchnummer;
+
+//   // 🔥 Root nur einmal setzen (beim ersten Fetch)
+//   if (!rootId) {
+//     setRootId(mainId);
+//   }
+
+//   // Welche ID gilt aktuell als "Main" im Layout?
+//   const effectiveMainId = rootId ?? mainId;
+
+//   // 👇 NEU: vorhandene Nodes nach ID indexieren
+//   const existingById = new Map(nodes.map((n) => [n.id, n]));
+
+//   const rawNodes = company.nodes.map((node) => {
+//     const existing = existingById.get(node.id);
+//     const isMain = node.id === effectiveMainId;
+
+//     return {
+//       id: node.id,
+//       // wenn der Node schon existiert, Type behalten – sonst neu bestimmen
+//       type: existing?.type ?? (isMain ? "main_company_display" : "default_company_display"),
+//       // 🔥 vorhandene Position behalten, sonst (0,0) → wird von starLayout gesetzt
+//       position: existing?.position ?? { x: 0, y: 0 },
+//       // Label evtl. überschreiben, Rest aus existing.data behalten
+//       data: {
+//         ...(existing?.data ?? {}),
+//         label: node.label,
+//       },
+//     };
+//   });
+
+//   const rawEdges = company.edges.map((edge) => {
+//     const createdEdge = {
+//       id: `${edge.source}-${edge.target}`,
+//       source: edge.source,
+//       target: edge.target,
+//       type: "straight",
+//       data: { label: edge.label },
+//       animated: true,
+//     };
+
+//     return createdEdge;
+//   });
+
+//   // 🔥 Layout immer um die ursprüngliche Root zentrieren
+//   // 👉 Layout um den Node, dessen Network wir gerade fetchen (Parent des neuen Branches)
+// const positionedNodes = starLayout(rawNodes, mainId);
+
+
+//   updateGraphData(positionedNodes, rawEdges);
+
+//   // 🔍 Neue Child-IDs ermitteln
+//   const newChildIds = positionedNodes
+//     .map((n) => n.id)
+//     .filter((id) => id !== mainId && !visibleNodeIds.has(id));
+
+//   // 🧬 childrenByParent-Eintrag für mainId aktualisieren
+//   setChildrenByParent((prev) => {
+//     const prevChildrenSet = prev[mainId] ?? new Set();
+//     const updatedChildrenSet = new Set(prevChildrenSet);
+
+//     newChildIds.forEach((id) => {
+//       updatedChildrenSet.add(id);
+//     });
+
+//     return {
+//       ...prev,
+//       [mainId]: updatedChildrenSet,
+//     };
+//   });
+
+//   // 🔥 alle Nodes aus diesem Fetch zur Sichtbarkeit dazu nehmen (nicht überschreiben)
+//   setVisibleNodeIds((prev) => {
+//     const next = new Set(prev);
+//     positionedNodes.forEach((n) => next.add(n.id));
+//     return next;
+//   });
+// }
+
+async function fetchCompany(id) {
+  const response = await fetch(`https://apibizray.bnbdevelopment.hu/api/v1/network/${id}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch company data");
+  }
+  const data = await response.json();
+
+  const company = data.company;
+  const mainId = company.firmenbuchnummer;
+
+  // 🔥 Root nur einmal setzen (beim ersten Fetch)
+  if (!rootId) {
+    setRootId(mainId);
+  }
+
+  // 👉 Layout-Parent ist IMMER der geklickte Node
+  const parentId = id;
+
+  // vorhandene Nodes nach ID indexieren
+  const existingById = new Map(nodes.map((n) => [n.id, n]));
+
+  const rawNodes = company.nodes.map((node) => {
+    const existing = existingById.get(node.id);
+    const isMain = node.id === (rootId ?? mainId);
+
+    return {
+      id: node.id,
+      // wenn der Node schon existiert, Type behalten – sonst neu bestimmen
+      type: existing?.type ?? (isMain ? "main_company_display" : "default_company_display"),
+      // vorhandene Position behalten, sonst (0,0) → wird von starLayout gesetzt
+      position: existing?.position ?? { x: 0, y: 0 },
+      // Label evtl. überschreiben, Rest aus existing.data behalten
+      data: {
+        ...(existing?.data ?? {}),
+        label: node.label,
+      },
+    };
+  });
+
+  const rawEdges = company.edges.map((edge) => {
+    const createdEdge = {
+      id: `${edge.source}-${edge.target}`,
+      source: edge.source,
+      target: edge.target,
+      type: "straight",
+      data: { label: edge.label },
+      animated: true,
+    };
+
+    return createdEdge;
+  });
+
+  // 👉 Layout um den Node, dessen Network wir gerade fetchen (Parent des neuen Branches)
+  const positionedNodes = starLayout(rawNodes, parentId);
+
+  updateGraphData(positionedNodes, rawEdges);
+
+  // 🔍 Neue Child-IDs ermitteln
+  const newChildIds = positionedNodes
+    .map((n) => n.id)
+    .filter((nid) => nid !== parentId && !visibleNodeIds.has(nid));
+
+  // 🧬 childrenByParent-Eintrag für parentId aktualisieren
+  setChildrenByParent((prev) => {
+    const prevChildrenSet = prev[parentId] ?? new Set();
+    const updatedChildrenSet = new Set(prevChildrenSet);
+
+    newChildIds.forEach((nid) => {
+      updatedChildrenSet.add(nid);
+    });
+
+    return {
+      ...prev,
+      [parentId]: updatedChildrenSet,
+    };
+  });
+
+  // 🔥 alle Nodes aus diesem Fetch zur Sichtbarkeit dazu nehmen (nicht überschreiben)
+  setVisibleNodeIds((prev) => {
+    const next = new Set(prev);
+    positionedNodes.forEach((n) => next.add(n.id));
+    return next;
+  });
+}
+
+
 
     useEffect(() => {
         console.log("VISIBLE NODE IDS (effect):", visibleNodeIds);
