@@ -317,3 +317,101 @@ def network_connection(request, comp_id):
 
 
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
+
+@require_GET
+def dummy_data(request):
+    """
+    Dummy skills API based on Florian's CV.
+    Categories: IT, Soft Skills, Health, Sales.
+    """
+    data = {
+        "IT": [
+            {
+                "id": "it_python",
+                "name": "Python",
+                "details": ["Django", "Pytest", "Pygame", "NumPy", "Pandas"],
+            },
+            {
+                "id": "it_js",
+                "name": "JavaScript",
+                "details": ["React", "Node.js", "Fetch API", "DOM manipulation"],
+            },
+            {
+                "id": "it_r",
+                "name": "R",
+                "details": ["ggplot2", "data analysis", "statistics", "inferential eval"],
+            },
+            {
+                "id": "it_webdev",
+                "name": "Web Development",
+                "details": ["HTML", "CSS", "Bootstrap", "WordPress"],
+            },
+            {
+                "id": "it_devops",
+                "name": "DevOps & Databases",
+                "details": [
+                    "Docker",
+                    "Git/GitHub",
+                    "SQLite",
+                    "PostgreSQL",
+                    "Neo4j",
+                    "CI/CD",
+                    "Scrum",
+                ],
+            },
+        ],
+        "Soft Skills": [
+            {
+                "id": "soft_teaching",
+                "name": "Teaching & Tutoring",
+                "details": [
+                    "Informatics tutor (IMC)",
+                    "Programming instructor (children & teens)",
+                ],
+            },
+            {
+                "id": "soft_communication",
+                "name": "Communication",
+                "details": [
+                    "Direct client contact (web design)",
+                    "Fundraising for NGOs",
+                ],
+            },
+            {
+                "id": "soft_leadership",
+                "name": "Leadership & Teamwork",
+                "details": ["Team leader in fundraising", "Cooperation with lecturers"],
+            },
+        ],
+        "Health": [
+            {
+                "id": "health_massage",
+                "name": "Medical & Commercial Massage",
+                "details": [
+                    "Medical masseur training",
+                    "Commercial & medical massage training",
+                    "Internships (VAMED, La Pura, Sanatorium Hera)",
+                ],
+            }
+        ],
+        "Sales": [
+            {
+                "id": "sales_fundraising",
+                "name": "Fundraising & Sales",
+                "details": [
+                    "Fundraiser & team leader (Amnesty, WWF)",
+                    "Direct customer contact",
+                ],
+            },
+            {
+                "id": "sales_logistics",
+                "name": "Logistics & Operations",
+                "details": ["Tech-based food startup logistics (Schrankerl GmbH)"],
+            },
+        ],
+    }
+
+    return JsonResponse({"ok": True, "data": data})
