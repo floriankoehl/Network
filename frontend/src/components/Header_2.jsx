@@ -14,6 +14,8 @@ import LoginIcon from "@mui/icons-material/Login";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import WbIridescentIcon from "@mui/icons-material/WbIridescent";
 import FlightLandIcon from "@mui/icons-material/FlightLand";
+import { Brain } from 'lucide-react';
+
 
 export default function Header() {
   // Controls whether the mobile menu is open or closed
@@ -28,6 +30,7 @@ export default function Header() {
     { to: "/login", label: "Login", icon: <VpnKeyIcon fontSize="small" /> },
     // { to: "/graph_3", label: "Graph 3", icon: <WbIridescentIcon fontSize="small" /> },
     { to: "/graph", label: "Graph", icon: <WbIridescentIcon fontSize="small" /> },
+    { to: "/skills", label: "Skills", icon: <Brain />}
   ];
 
   // Helper function to generate Tailwind classes depending on active state

@@ -13,7 +13,8 @@ import Landing from "./pages/Landing.jsx";
 // import GraphWrapper from "./pages/Graph_2/GraphWrapper.jsx";
 // import Graph_4_Wrapper from "./pages/Graph_2/Graph_4_Wrapper.jsx";
 import GraphWrapper from "./pages/Graph_Page/GraphWrapper.jsx"
-
+import Skills, {skills_loader_function} from "./pages/Skills/Skills.jsx";
+import SkillsWrapper from "./pages/Skills/SkillsWrapper.jsx";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       // { path:"/graph_2", element: <Graph_2/>},   
       { path:"/graph_3", element: <GraphWrapper/>},  
       { path:"/graph", element: <GraphWrapper/>},  
+      { path:"/skills", element: <SkillsWrapper/>, loader: skills_loader_function},
       {
     path: "/profile",
     element: <Profile />,
