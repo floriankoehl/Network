@@ -1,12 +1,13 @@
 
 import TextField from '@mui/material/TextField';
 import ColorPickerPanel from '../org_components/ColorPickerPanel';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Palette } from 'lucide-react';
 import { HexColorPicker } from "react-colorful";
 import Button from '@mui/material/Button';
 import { BASE_URL } from "../../config/api"
 import { useLoaderData } from 'react-router-dom';
+import { useRevalidator } from "react-router-dom";
 
 
 export async function fetch_all_teams() {
@@ -26,10 +27,84 @@ export async function fetch_all_teams() {
 
 
 export default function OrgaAllTeams() {
+    const revalidator = useRevalidator();
     const loader_teams = useLoaderData()
     const [all_teams, setAll_Teams] = useState(loader_teams);
-    const [showColorPickerPanel, setShowColorPickerPanel] = useState(false)
+    const [showColorPickerPanel, setShowColorPickerPanel] = useState(false);
+
+    const [teamName, setTeamName] = useState("");
     const [teamColor, setTeamColor] = useState("#facc15");
+
+    useEffect(() => {
+        setAll_Teams(loader_teams);
+    }, [loader_teams]);
+
+
+
+    async function delete_team(id) {
+        console.log("Trying to delete team...")
+
+        const res = await fetch(`${BASE_URL}/api/orgarhythmus/delete_team/`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json"
+            },
+            body: JSON.stringify({ id })
+        });
+
+        if (!res.ok) {
+            console.log("Couldnt Delete Team")
+            return
+        };
+
+        setAll_Teams((prevTeams) => prevTeams.filter(team => team.id !== id))
+
+        console.log("Team deleted sucesfully")
+    };
+
+
+
+
+    async function create_team() {
+        console.log("Calling Create Team API from React...");
+
+        const res = await fetch(`${BASE_URL}/api/orgarhythmus/create_team/`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json"
+            },
+            body: JSON.stringify({
+                name: teamName,
+                color: teamColor
+            })
+        });
+
+        if (!res.ok) {
+            console.log("REACT didnt receive correct response while creating team")
+            return
+        }
+
+
+        console.log("Team Sucesfully created!")
+
+        revalidator.revalidate();
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -44,7 +119,9 @@ export default function OrgaAllTeams() {
 
                             <h1 className='text-center font-bold text-xl mb-2'>Create a Team</h1>
 
-                            <TextField className='flex' id="outlined-basic" label="Name" variant="outlined" size="small" />
+                            <TextField
+                                onChange={(e) => { setTeamName(e.target.value) }}
+                                className='flex' id="outlined-basic" label="Name" variant="outlined" size="small" />
 
                             <div className='flex relative justify-between items-center h-10 px-3 py-1 border border-black/20 rounded'>
                                 <div className='flex gap-2 items-center relative'>
@@ -84,24 +161,37 @@ export default function OrgaAllTeams() {
 
                             </div>
                             <div className='h-full flex justify-center items-end'>
-                                <Button className='absolute bottom-0 w-[100px]' variant="contained" color="success">Create</Button>
+                                <Button
+                                    onClick={() => { create_team() }}
+                                    className='absolute bottom-0 w-[100px]' variant="contained" color="success">Create</Button>
                             </div>
 
                         </div>
                     </div>
                     <div className="h-1/2 w-full lg:p-10 p-1">
                         <div className="h-full w-full  grid md:grid-cols-3 lg:grid-cols-4 gap-3 p-2">
-                            <div className="h-full w-full bg-white shadow-xl shadow-black/20 rounded-lg border border-black/20">
-                            </div>
+
                             {all_teams.map((team) => {
                                 return (
                                     <div
-                                        key={team.id || team.name}   // ← ADD THIS
+                                        key={team.id}
+                                        style={{ backgroundColor: team.color }}
                                         className="h-full w-full bg-white shadow-xl 
                                         shadow-black/20 rounded-lg border border-black/20
                                         min-h-40 min-w-40"
                                     >
-                                        {team.name}
+                                        <div className='h-1/4 w-full   flex items-center px-2 text-md'>
+                                            {team.name}
+                                        </div>
+                                        <div className='h-3/4 w-full flex  text-md relative'>
+                                            <div className='absolute bottom-0 flex h-10 w-full justify-center mb-2'>
+                                                <Button
+                                                    onClick={() => { delete_team(team.id) }}
+                                                    variant="contained" color="error" size='small'>Delete</Button>
+
+                                            </div>
+                                        </div>
+
                                     </div>
                                 );
                             })}

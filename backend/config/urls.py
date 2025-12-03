@@ -18,19 +18,21 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import path
 from api.views import (echo_view,
-                       create_user,
-                       all_users,
-                       display_single_user,
-                       delete_user,
-                       change_name_user,
-                       write_comment ,
-                       all_comments, api_login, get_current_user, check_auth,
-                       network_connection,
-                       dummy_data,
-                       all_tasks,
-                        delete_task_by_id,
-                        create_task,
-                        all_teams
+create_user,
+all_users,
+display_single_user,
+delete_user,
+change_name_user,
+write_comment ,
+all_comments, api_login, get_current_user, check_auth,
+network_connection,
+dummy_data,
+all_tasks,
+delete_task_by_id,
+create_task,
+all_teams,
+delete_team,
+create_team
 
                        )  # nutzt unsere Minimal-API
 
@@ -47,6 +49,8 @@ urlpatterns = [
     path('api/orgarhytmus/delete_task/', delete_task_by_id),
     path('api/orgarhytmus/create_task/', create_task),
     path('api/orgarhythmus/all_teams/', all_teams),
+    path('api/orgarhythmus/delete_team/', delete_team),
+    path('api/orgarhythmus/create_team/', create_team),
 
 
 

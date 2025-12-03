@@ -59,6 +59,39 @@ def all_teams(request):
 
     return JsonResponse({"status": "test", "teams": data}, status=200)
 
+@csrf_exempt
+def delete_team(request):
+    if request.method == "POST":
+        body = json.loads(request.body)
+        team_id = body.get("id")
+        team_to_delete = Team.objects.get(id=team_id)
+        team_to_delete.delete()
+        return JsonResponse({"status": "success"}, status=200)
+
+
+
+@csrf_exempt
+def create_team(request):
+    if request.method == "POST":
+        body = json.loads(request.body)
+        name = body.get("name")
+        color = body.get("color")
+        Team.objects.create(name=name, color=color)
+        return JsonResponse({"status": "success"}, status=200)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
