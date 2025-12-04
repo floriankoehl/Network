@@ -10,7 +10,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import Select from "@mui/material/Select";
 import { fetch_all_teams } from "../org_API";
-
+import { redirect } from "react-router-dom";
 
 
 
@@ -19,12 +19,27 @@ const numbers = [1, 2, 3, 4, 5];
 
 
 export async function fetch_all_tasks() {
-    const res = await fetch(`${BASE_URL}/api/orgarhytmus/all_tasks/`)
+    const token = localStorage.getItem("access_token");
 
-    if (!res) {
-        console.log("error")
-        return
-    }
+    if (!token) {
+    throw redirect("/login");
+  }
+
+    const res = await fetch(`${BASE_URL}/api/orgarhytmus/all_tasks/`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+    if (res.status === 401 || res.status === 403) {
+    // Token invalid/expired or user not allowed
+    throw redirect("/login");
+  }
+
+    if (!res.ok) {
+    // Let React Router show the default error boundary or your custom one
+    throw new Error("Could not load tasks");
+  }
 
     const data = await res.json();
     console.log("dateeeeeeeeeeea", data)

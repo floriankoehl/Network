@@ -39,6 +39,8 @@ export async function login(username, password) {
 export function logout() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+
+  window.location.reload();
 }
 
 // ---- Helper: get current access token ----

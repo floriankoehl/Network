@@ -26,7 +26,7 @@ from rest_framework_simplejwt.views import (
 
 from api.views import (echo_view,
 
-all_users,
+
 display_single_user,
 
 
@@ -78,7 +78,7 @@ urlpatterns = [
 
 
 
-    path('api/users/all', all_users),
+
     path('api/users/<int:user_id>/', display_single_user),
 
 

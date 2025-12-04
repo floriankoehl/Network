@@ -224,9 +224,7 @@ def check_auth(request):
 
 
 #GET
-def all_users(request):
-    users = list(User.objects.values())  # returns list of dicts
-    return JsonResponse({"users": users})
+
 
 def display_single_user(request, user_id):
     print("user id: ", user_id)
@@ -313,6 +311,8 @@ def serialize_team(team):
 
 
 #TASKS
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def all_tasks(request):
     tasks = Task.objects.select_related("team").all()
     data = [serialize_task(task) for task in tasks]

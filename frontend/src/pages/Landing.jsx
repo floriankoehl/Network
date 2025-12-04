@@ -129,7 +129,7 @@ export default function Landing() {
 
                     </div>
 
-
+{/* 
                     <div
                         onClick={() => {
                             if (!roadmapflag) {
@@ -159,7 +159,7 @@ export default function Landing() {
                                 `}
                     >
                         <KeyboardArrowDownIcon className="animate-bounce text-white opacity-80 !h-[40px] !w-[40px] translate-y-[5px]" cx />
-                    </div>
+                    </div> */}
 
 
 
