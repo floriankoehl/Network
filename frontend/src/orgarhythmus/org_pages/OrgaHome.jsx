@@ -11,7 +11,7 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import Select from "@mui/material/Select";
 import { fetch_all_teams } from "../org_API";
 import { redirect } from "react-router-dom";
-
+import CommentWall from "../../pages/CommentWall";
 
 
 

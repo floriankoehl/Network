@@ -10,6 +10,7 @@ from django.db.models import SET_NULL
 class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)  # ← Besser!
     text = models.CharField(max_length=2000, blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
 
 

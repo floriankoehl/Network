@@ -18,7 +18,7 @@ import { Brain } from 'lucide-react';
 import { CalendarCheck } from 'lucide-react';
 import { useAuth } from "../auth/AuthContext";
 import LogoutIcon from '@mui/icons-material/Logout';
-
+import ChatIcon from '@mui/icons-material/Chat';
 
 
 
@@ -32,6 +32,7 @@ export default function Header() {
 
   // Central definition of your nav items, so it's easy to change later
   const navItems = [
+    { to: "/comment_wall", label: "Chat", icon: <ChatIcon fontSize="small" /> },
     { to: "/landing", label: "Landing", icon: <FlightLandIcon fontSize="small" /> },
     { to: "/graph", label: "Graph", icon: <WbIridescentIcon fontSize="small" /> },
     { to: "/skills", label: "Skills", icon: <Brain /> },

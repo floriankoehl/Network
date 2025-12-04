@@ -15,7 +15,7 @@ import Landing from "./pages/Landing.jsx";
 import GraphWrapper from "./pages/Graph_Page/GraphWrapper.jsx"
 import Skills, {skills_loader_function} from "./pages/Skills/Skills.jsx";
 import SkillsWrapper from "./pages/Skills/SkillsWrapper.jsx";
-
+import CommentWall from "./pages/CommentWall.jsx";
 
 
 import OrgaLayout from "./orgarhythmus/org_layouts/OrgaLayout.jsx";
@@ -31,7 +31,8 @@ const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <Landing />},
+      { index: true, element: <CommentWall />},
+      { path:"/comment_wall", element: <CommentWall/>},
       { path:"/landing", element: <Landing/>},
       { path:"/login", element: <LoginPage/>},
       { path:"/register", element: <RegisterPage/>},

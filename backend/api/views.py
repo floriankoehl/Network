@@ -429,39 +429,96 @@ def echo_view(request, text):
 
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework import status
 
+from .models import Comment
 
-@csrf_exempt
-def write_comment(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method must be POST"})
-
-    try:
-        data = json.loads(request.body)
-        comment = data.get("comment")
-        if data.get("author"):
-            author = data.get("author")
-            Comment.objects.create(text=comment, author=author)
-            return JsonResponse({"ok": True})
-        else:
-            Comment.objects.create(text=comment)
-            return JsonResponse({"ok": True})
-
-
-    except json.decoder.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-
-
+# GET /api/comments/all_comments/
+@api_view(["GET"])
+@permission_classes([AllowAny])  # everyone can read, adjust if needed
 def all_comments(request):
-    if request.method != "GET":
-        return JsonResponse({"error": "Method can only be GET"}, status=405)
+    comments = (
+        Comment.objects
+        .select_related("author")
+        .order_by("timestamp")  # or "-timestamp" for newest first
+    )
 
-    comments = Comment.objects.values()  # ← converts into list of dicts
-    data = list(comments)
+    data = [
+        {
+            "id": c.id,
+            "author": c.author.username if c.author else None,
+            "text": c.text,
+            "timestamp": c.timestamp.isoformat(),
+        }
+        for c in comments
+    ]
 
-    return JsonResponse({"comments": data}, safe=False)
+    return Response({"comments": data}, status=status.HTTP_200_OK)
 
+
+# POST /api/comments/write/
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])  # 🔐 only logged-in users can post
+def write_comment(request):
+    text = request.data.get("text") or request.data.get("comment")
+
+    if not text or not text.strip():
+        return Response(
+            {"error": "Text is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ✅ Use request.user from JWT, ignore any 'author' from client
+    comment = Comment.objects.create(
+        author=request.user,
+        text=text.strip(),
+    )
+
+    data = {
+        "id": comment.id,
+        "author": comment.author.username,
+        "text": comment.text,
+        "timestamp": comment.timestamp.isoformat(),
+    }
+
+    return Response({"comment": data}, status=status.HTTP_201_CREATED)
+
+
+
+# @csrf_exempt
+# def write_comment(request):
+#     if request.method != "POST":
+#         return JsonResponse({"error": "Method must be POST"})
+#
+#     try:
+#         data = json.loads(request.body)
+#         comment = data.get("comment")
+#         if data.get("author"):
+#             author = data.get("author")
+#             Comment.objects.create(text=comment, author=author)
+#             return JsonResponse({"ok": True})
+#         else:
+#             Comment.objects.create(text=comment)
+#             return JsonResponse({"ok": True})
+#
+#
+#     except json.decoder.JSONDecodeError:
+#         return JsonResponse({"error": "Invalid JSON"}, status=400)
+#
+#
+#
+# def all_comments(request):
+#     if request.method != "GET":
+#         return JsonResponse({"error": "Method can only be GET"}, status=405)
+#
+#     comments = Comment.objects.values()  # ← converts into list of dicts
+#     data = list(comments)
+#
+#     return JsonResponse({"comments": data}, safe=False)
+#
 
 
 

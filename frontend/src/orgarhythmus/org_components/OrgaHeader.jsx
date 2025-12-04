@@ -21,7 +21,7 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 
 import { useAuth } from "../../auth/AuthContext";
-
+import ChatIcon from '@mui/icons-material/Chat';
 
 export default function OrgaHeader() {
   // Controls whether the mobile menu is open or closed
