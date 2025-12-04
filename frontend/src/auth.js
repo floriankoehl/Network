@@ -59,7 +59,7 @@ export async function authFetch(path, options = {}) {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-
+//
   // If body is a JS object and no content-type set yet, assume JSON
   if (options.body && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
