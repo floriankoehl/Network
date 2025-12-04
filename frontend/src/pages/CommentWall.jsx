@@ -115,8 +115,22 @@ export default function CommentWall() {
 
   return (
     <div className="h-screen w-screen flex justify-center items-center pt-0 lg:pt-20 pb-10">
-    <div className="flex h-full max-h-[600px] w-full max-w-2xl flex-col rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-xl backdrop-blur">
-      {/* Header */}
+<div
+  className="
+    flex flex-col
+    w-full max-w-2xl 
+    rounded-none md:rounded-2xl
+    border border-slate-700/70 
+    bg-slate-900/80 
+    shadow-xl backdrop-blur
+
+    pt-25 md:pt-5
+    h-screen md:h-[70vh]   // ⬅️ FULLSCREEN ON MOBILE, 70vh ON DESKTOP
+    max-h-screen md:max-h-[600px]   // ⬅️ PREVENT OVERFLOW ON MOBILE
+
+    p-4
+  "
+>      {/* Header */}
       <div className="mb-3 flex items-center justify-between border-b border-slate-700/60 pb-2">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-300">
