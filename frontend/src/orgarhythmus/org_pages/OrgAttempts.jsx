@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import ReactFlow, {
   useReactFlow,
   applyNodeChanges,
+  applyEdgeChanges,
+  addEdge,
   Background,
   Controls,
   Handle,
@@ -64,11 +66,11 @@ function snapAttemptX(x) {
 
 
 const isMobile = window.innerWidth <= 768;
-let TASK_HEIGHT = 80;
-let TASK_WIDTH = 80;
-const ENTRIES = 25
+let TASK_HEIGHT = 60;
+let TASK_WIDTH = 60;
+const ENTRIES = 15
 
-let SIDEBAR_WIDTH = 100;
+let SIDEBAR_WIDTH = 80;
 let TASK_SIDEBAR_WIDTH = 100;
 
 const TEAM_GAP_PADDING_Y = 5;
@@ -195,10 +197,9 @@ function TeamNode({ data }) {
   return (
     <div
       style={{ width: COMPONENT_WIDTH, height: data.height }}
-      className="relative h-full flex bg-slate-100 rounded-lg overflow-hidden border border-slate-300"
+      className="relative h-full flex rounded-lg overflow-hidden border border-slate-300"
     >
-
-      {/* 🔹 New top color strip */}
+      {/* top color strip */}
       <div
         style={{
           backgroundColor: data.color,
@@ -221,12 +222,12 @@ function TeamNode({ data }) {
         </span>
       </div>
 
-      {/* Right area – attempt nodes are rendered here */}
-      <div className="flex-1 relative p-2">
-      </div>
+      {/* Right area – attempts live visually here, but as separate nodes */}
+      <div className="flex-1 relative p-2" />
     </div>
   );
 }
+
 
 
 function TaskNode({ data }) {
@@ -244,18 +245,19 @@ function TaskNode({ data }) {
       </div>
 
       {/* Right: pixel slots */}
-      <div className="flex-1 h-full flex">
-        {Object.entries(pixelMap).map(([index, range]) => (
-          <div
-            key={index}
-            style={{
-              width: range.end - range.beginn,
-              height: "100%",
-            }}
-            className="border border-black/10"
-          />
-        ))}
-      </div>
+      <div className="flex-1 h-full flex" style={{ pointerEvents: "none" }}>
+  {Object.entries(pixelMap).map(([index, range]) => (
+    <div
+      key={index}
+      style={{
+        width: range.end - range.beginn,
+        height: "100%",
+      }}
+      className="border border-black/10"
+    />
+  ))}
+</div>
+
 
     </div>
   );
@@ -271,35 +273,41 @@ function TaskNode({ data }) {
 
 
 
-function AttemptNode({ data }) {
+// ⬇️ add "selected" here
+function AttemptNode({ data, selected }) {
   return (
     <div
-      className="
-        bg-white rounded-md border border-slate-300 
+      className={`
+        bg-white rounded-md border  
         shadow-sm flex justify-center items-center m-2 text-xs
-      "
-      style={{ width: TASK_WIDTH - 15, height: TASK_HEIGHT - 15 }}
+        transition-all duration-150
+        font-bold !text-[15px] text-black shadow-xl shadow-black/5
+        ${selected ? "border-sky-500 shadow-md scale-105 shadow-black/30"  : "border-slate-300"}
+      `}
+      style={{
+        width: TASK_WIDTH - 15,
+        height: TASK_HEIGHT - 15,
+        position: "relative",
+        zIndex: 10,
+      }}
     >
-      
-      {isMobile ? <p>X</p> : data.label }
+      {data.number}
 
-      {/* Left handle → 10px inside */}
       <Handle
         type="target"
         position={Position.Left}
         style={{
-          left: 5,         // push into the node
+          left: -2,
           top: "50%",
-          transform: "translateY(-50%)", // keep it vertically centered
+          transform: "translateY(-50%)",
         }}
       />
 
-      {/* Right handle → 10px inside */}
       <Handle
         type="source"
         position={Position.Right}
         style={{
-          right: 5,        // push into the node
+          right: -2,
           top: "50%",
           transform: "translateY(-50%)",
         }}
@@ -341,6 +349,13 @@ export default function OrgAttempts() {
   const [x_reactflow_size, setX_reactflow_size] = useState(1000)
   const [y_reactflow_size, setY_reactflow_size] = useState(1000)
   const [overallgap, setOverAllGap] = useState(0)
+
+  const [edges, setEdges] = useState([]);
+
+
+
+
+
 
   const REACTFLOW_HEIGHT = 700;
 
@@ -410,6 +425,7 @@ export default function OrgAttempts() {
               // width: ..., color: ..., etc.
             },
             draggable: false,
+            selectable: false,
           }));
         });
 
@@ -444,7 +460,8 @@ export default function OrgAttempts() {
               type: 'attemptNode', // Add node type
               position: { x: 0 + TASK_SIDEBAR_WIDTH, y: index * 0 },
               data: {
-                label: attempt.name
+                label: attempt.name,
+                number: attempt.number
               }
             }
           )
@@ -486,8 +503,15 @@ export default function OrgAttempts() {
     ...groupNodes,
     ...taskNodes,
     ...nodes, // attempts
+    
+    
+    
+    
   ]);
 }, [groupNodes, taskNodes, nodes]);
+
+
+
 
 
 
@@ -528,6 +552,28 @@ const onNodeDragStop = useCallback((event, node) => {
 
 
 
+  const onEdgesChange = useCallback((changes) => {
+  setEdges((eds) => applyEdgeChanges(changes, eds));
+}, []);
+
+const onConnect = useCallback((connection) => {
+  console.log("onConnect fired:", connection);
+
+  setEdges((eds) => {
+    const newEdges = addEdge(
+      {
+        ...connection,
+        type: "default",     // 👈 curved edge, less hidden behind nodes
+        animated: true,
+        interactionWidth: 20,   // 👈 big click area around the line
+        style: { strokeWidth: 2 },
+      },
+      eds
+    );
+    console.log("edges now:", newEdges);
+    return newEdges;
+  });
+}, []);
 
 
 
@@ -548,21 +594,25 @@ const onNodeDragStop = useCallback((event, node) => {
         <div style={{ width: COMPONENT_WIDTH, height: y_reactflow_size }} className="
         shadow-xl shadow-black/30 rounded-xl ">
           <ReactFlow
-          nodes={mergedNodes}
-          nodeTypes={nodeTypes}
-          
-
-          onNodesChange={onNodesChange}
+  nodes={mergedNodes}
+  edges={edges}
+  nodeTypes={nodeTypes}
+  onNodesChange={onNodesChange}
+  onEdgesChange={onEdgesChange}
+  onConnect={onConnect}
   onNodeDragStop={onNodeDragStop}
+  elementsSelectable={true}               // (default, but nice to be explicit)
+  deleteKeyCode={["Delete", "Backspace"]} // allow deleting selected edges/nodes
+  maxZoom={1.2}
+  minZoom={1}
+    // onNodeClick={(evt, node) => console.log("NODE CLICKED:", node)}
+  onEdgeClick={(evt, edge) => console.log("EDGE CLICKED:", edge)}
 
-
-          maxZoom={1.2}
-          minZoom={1}
-          translateExtent={[
-            [0, 0],
-            [COMPONENT_WIDTH + 100, y_reactflow_size],  // ✅ same value
-          ]}
-        >
+  translateExtent={[
+    [0, 0],
+    [COMPONENT_WIDTH + 100, y_reactflow_size],
+  ]}
+>
 
 
         </ReactFlow>

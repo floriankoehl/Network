@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+
+/* 
+.react-flow__edge.selected path {
+  stroke: #e90e0e;
+  stroke-width: 3px;
+}
+
+.react-flow__edge path {
+  stroke-width: 1.5px;
+} */
