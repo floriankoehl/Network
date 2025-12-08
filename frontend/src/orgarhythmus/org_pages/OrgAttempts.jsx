@@ -37,7 +37,9 @@ function playSnapSound() {
   }
 }
 
-
+function get_overall_gap(num_tasks, gap, header_gap) {
+  return num_tasks * gap + header_gap -20;
+}
 
 
 
@@ -60,18 +62,29 @@ function snapAttemptX(x) {
 }
 
 
-// const TEAM_WIDTH = COMPONENT_WIDTH;
-const ENTRIES = 10
-const TASK_HEIGHT = 80;
-const TASK_WIDTH = 80;
 
+const isMobile = window.innerWidth <= 768;
+let TASK_HEIGHT = 80;
+let TASK_WIDTH = 80;
+const ENTRIES = 25
 
-const SIDEBAR_WIDTH = 100;
-const TASK_SIDEBAR_WIDTH = 100;
+let SIDEBAR_WIDTH = 100;
+let TASK_SIDEBAR_WIDTH = 100;
 
 const TEAM_GAP_PADDING_Y = 5;
 const TASK_GAP_PADDING_X = 0;
 const HEADER_BODY_GAP = 10;
+
+
+if (isMobile) {
+  TASK_HEIGHT = 30;
+  TASK_WIDTH = 30;
+   SIDEBAR_WIDTH = 50;
+ TASK_SIDEBAR_WIDTH = 50;
+} 
+  
+// const TEAM_WIDTH = COMPONENT_WIDTH;
+
 
 //JUST FOR DEMO - WILL LATER CHANGE
 
@@ -179,16 +192,26 @@ function TaskHeaderNode() {
 
 
 function TeamNode({ data }) {
-  // const sidebarWidth = data.sidebarWidth ?? 60;
-
   return (
     <div
       style={{ width: COMPONENT_WIDTH, height: data.height }}
-      className=" h-full flex bg-slate-100 rounded-lg overflow-hidden border border-slate-300">
+      className="relative h-full flex bg-slate-100 rounded-lg overflow-hidden border border-slate-300"
+    >
+
+      {/* 🔹 New top color strip */}
+      <div
+        style={{
+          backgroundColor: data.color,
+          height: "3px",
+          width: "100%",
+        }}
+        className="absolute top-0 left-0"
+      />
+
       {/* Left vertical label */}
       <div
         style={{ width: SIDEBAR_WIDTH, backgroundColor: data.color }}
-        className={` text-white flex items-center justify-center`}
+        className="text-white flex items-center justify-center"
       >
         <span
           className="text-xs font-semibold tracking-wide text-black"
@@ -198,16 +221,13 @@ function TeamNode({ data }) {
         </span>
       </div>
 
-      {/* Right area – children (attempt nodes) will be rendered on top of this */}
+      {/* Right area – attempt nodes are rendered here */}
       <div className="flex-1 relative p-2">
-        {/* React Flow will paint child nodes here via parentNode/extent='parent' */}
-
-
-
       </div>
     </div>
   );
 }
+
 
 function TaskNode({ data }) {
   return (
@@ -260,7 +280,8 @@ function AttemptNode({ data }) {
       "
       style={{ width: TASK_WIDTH - 15, height: TASK_HEIGHT - 15 }}
     >
-      {data.label}
+      
+      {isMobile ? <p>X</p> : data.label }
 
       {/* Left handle → 10px inside */}
       <Handle
@@ -319,6 +340,7 @@ export default function OrgAttempts() {
   const [mergedNodes, setMergedNodes] = useState([])
   const [x_reactflow_size, setX_reactflow_size] = useState(1000)
   const [y_reactflow_size, setY_reactflow_size] = useState(1000)
+  const [overallgap, setOverAllGap] = useState(0)
 
   const REACTFLOW_HEIGHT = 700;
 
@@ -367,7 +389,7 @@ export default function OrgAttempts() {
 
 
         setGroupNodes(updated_group_nodes);
-        setY_reactflow_size(currentY + 30);
+        
 
         //RENDER TASK NODES
         const updated_task_nodes = all_teams.flatMap((team) => {
@@ -393,9 +415,10 @@ export default function OrgAttempts() {
 
         setTaskNodes(updated_task_nodes);
 
-
+        setOverAllGap(get_overall_gap(num_teams,TEAM_GAP_PADDING_Y, HEADER_BODY_GAP ))
+        setY_reactflow_size(currentY + get_overall_gap(num_teams,TEAM_GAP_PADDING_Y, HEADER_BODY_GAP));
       }
-
+      //END HERE
 
 
 
@@ -511,7 +534,7 @@ const onNodeDragStop = useCallback((event, node) => {
 
 
 
-
+//
 
   return (
     <>
@@ -519,11 +542,11 @@ const onNodeDragStop = useCallback((event, node) => {
         style={{ height: `${y_reactflow_size}px` }}
         className="w-screen 
              flex justify-center items-center 
-             mt-20
+             m-20 lg:max-w-full  lg:px-10 md:max-w-[700px] sm:max-w-full p-3
              "
       >
         <div style={{ width: COMPONENT_WIDTH, height: y_reactflow_size }} className="
-        shadow-xl shadow-black/30 border border-black/80 p-2">
+        shadow-xl shadow-black/30 rounded-xl ">
           <ReactFlow
           nodes={mergedNodes}
           nodeTypes={nodeTypes}
