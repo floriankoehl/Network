@@ -296,6 +296,7 @@ function AttemptNode({ data, selected }) {
       <Handle
         type="target"
         position={Position.Left}
+        className="!w-2 !h-2"
         style={{
           left: -2,
           top: "50%",
@@ -306,6 +307,7 @@ function AttemptNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Right}
+        className="!w-2 !h-2" 
         style={{
           right: -2,
           top: "50%",
@@ -603,7 +605,7 @@ const onConnect = useCallback((connection) => {
   onNodeDragStop={onNodeDragStop}
   elementsSelectable={true}               // (default, but nice to be explicit)
   deleteKeyCode={["Delete", "Backspace"]} // allow deleting selected edges/nodes
-  maxZoom={1.2}
+  // maxZoom={1.2}
   minZoom={1}
     // onNodeClick={(evt, node) => console.log("NODE CLICKED:", node)}
   onEdgeClick={(evt, edge) => console.log("EDGE CLICKED:", edge)}
