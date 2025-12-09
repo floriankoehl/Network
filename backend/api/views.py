@@ -1371,6 +1371,21 @@ def all_attempts_for_this_project(request, project_id):
 
 
 
+@csrf_exempt
+def project_team_detail(request, project_id, team_id):
+    """Handles DELETE for a single team."""
+
+    try:
+        team = Team.objects.get(id=team_id, project_id=project_id)
+    except Team.DoesNotExist:
+        return JsonResponse({"error": "Team not found"}, status=404)
+
+    # DELETE
+    if request.method == "DELETE":
+        team.delete()
+        return JsonResponse({"success": True}, status=204)
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
 
 
 

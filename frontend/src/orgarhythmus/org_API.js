@@ -722,7 +722,51 @@ export async function createTaskForProject(projectId, payload) {
 
 
 
+// /** 🗑️ Delete a team in this project */
+// export async function deleteTeamForProject(projectId, teamId) {
+//   const res = await authFetch(
+//     `/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`,
+//     {
+//       method: "DELETE",
+//     }
+//   );
 
+//   if (!res.ok) {
+//     throw new Error("Failed to delete team");
+//   }
+
+//   // Backend könnte 204 No Content liefern – dann gibt es kein JSON
+//   try {
+//     return await res.json();
+//   } catch {
+//     return null;
+//   }
+// }
+
+export async function deleteTeamForProject(projectId, teamId) {
+  const res = await authFetch(
+    `/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to delete team");
+  }
+
+  // If response is 204 No Content → return nothing
+  if (res.status === 204) {
+    return null;
+  }
+
+  // Otherwise try to parse JSON
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 
 

@@ -1,13 +1,22 @@
-// orgarhythmus/projects/pages/ProjectMain.jsx
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import { Users, Plus } from "lucide-react";
 import { HexColorPicker } from "react-colorful";
 
-import { fetchTeamsForProject, createTeamForProject } from "../../org_API";
+import {
+  fetchTeamsForProject,
+  createTeamForProject,
+  deleteTeamForProject,
+} from "../../org_API";
+
+import {
+  Users,
+  Plus,
+  Trash2,
+  Loader2
+} from "lucide-react";
+
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
 
 export default function ProjectTeams() {
   const { projectId } = useParams();
@@ -16,316 +25,293 @@ export default function ProjectTeams() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
-  const [teamName, setTeamName] = useState("");
-  const [teamColor, setTeamColor] = useState("#facc15");
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  // Create panel
+  const [showCreate, setShowCreate] = useState(false);
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#facc15");
+  const [showPicker, setShowPicker] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const [deletingId, setDeletingId] = useState(null);
 
   async function loadTeams() {
     try {
       setLoading(true);
-      setError(null);
       const data = await fetchTeamsForProject(projectId);
-      setTeams(data || []);
+      const list = Array.isArray(data) ? data : data.teams || [];
+      setTeams(list);
     } catch (err) {
       console.error(err);
-      setError("Could not load teams for this project.");
+      setError("Could not load teams.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (projectId) {
-      loadTeams();
-    }
+    if (projectId) loadTeams();
   }, [projectId]);
 
-  async function handleCreateTeam() {
-    if (!teamName.trim()) return;
+  async function handleCreate() {
+    if (!name.trim()) return;
 
     try {
-      await createTeamForProject(projectId, {
-        name: teamName,
-        color: teamColor,
-      });
+      setCreating(true);
+      await createTeamForProject(projectId, { name, color });
 
-      setTeamName("");
-      setTeamColor("#facc15");
-      setShowColorPicker(false);
-      setShowCreatePanel(false);
+      setName("");
+      setColor("#facc15");
+      setShowPicker(false);
+      setShowCreate(false);
 
       await loadTeams();
     } catch (err) {
       console.error(err);
       setError("Could not create team.");
+    } finally {
+      setCreating(false);
     }
   }
 
-  const hasTeams = teams && teams.length > 0;
+  async function handleDelete(teamId, teamName) {
+    const ok = window.confirm(`Delete team “${teamName}”?`);
+    if (!ok) return;
+
+    try {
+      setDeletingId(teamId);
+      await deleteTeamForProject(projectId, teamId);
+
+      // Optimistic UI
+      setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    } catch (err) {
+      console.error(err);
+      setError("Could not delete team.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-b from-slate-50 to-slate-100 flex justify-center">
-      <div className="w-full max-w-6xl px-4 py-8 flex flex-col gap-4">
+    <div className="min-h-screen w-full bg-gradient-to-b from-slate-50 to-slate-100 flex justify-center">
+      <div className="w-full max-w-5xl px-4 py-8 flex flex-col gap-6">
+
         {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-slate-900 flex items-center justify-center text-white shadow-sm">
-              <Users size={18} />
+            <div className="h-11 w-11 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow">
+              <Users size={20} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
-                Project #{projectId}
+              <h1 className="text-2xl font-semibold text-slate-900">
+                Teams for Project #{projectId}
               </h1>
-              <p className="text-sm text-slate-600 mt-1">
-                Manage the teams inside this OrgaRhythmus project.
+              <p className="text-xs text-slate-600 mt-1">
+                Manage which teams operate inside this OrgaRhythmus project.
               </p>
             </div>
           </div>
 
-          <div className="flex justify-start sm:justify-end">
-            <Button
-              variant="contained"
-              size="medium"
-              onClick={() => setShowCreatePanel(true)}
-              style={{
-                textTransform: "none",
-                display: "flex",
-                gap: "0.4rem",
-                alignItems: "center",
-                borderRadius: "9999px",
-                paddingInline: "1.1rem",
-              }}
-            >
-              <Plus size={18} />
-              New Team
-            </Button>
-          </div>
+          <Button
+            variant="contained"
+            onClick={() => setShowCreate(true)}
+            style={{
+              borderRadius: "100px",
+              textTransform: "none",
+              paddingInline: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+            }}
+          >
+            <Plus size={18} />
+            New Team
+          </Button>
         </header>
 
+        {/* Error message */}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Create panel */}
-        {showCreatePanel && (
-          <div className="rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-sm shadow-md p-4 sm:p-5 relative mb-4">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-violet-400 to-emerald-400" />
+        {/* Create team panel */}
+        {showCreate && (
+          <div className="relative rounded-2xl bg-white border border-slate-200 shadow p-5">
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-400 via-violet-400 to-emerald-400 rounded-t-lg" />
 
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-xs font-semibold tracking-[0.16em] uppercase text-slate-500">
-                  Create team
+                <h2 className="text-xs uppercase font-semibold tracking-wide text-slate-500">
+                  Create Team
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choose a name and color for this project team.
+                  Enter a name and pick a team color.
                 </p>
               </div>
               <button
-                onClick={() => setShowCreatePanel(false)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                onClick={() => setShowCreate(false)}
+                className="h-7 w-7 rounded-full border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-100"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <TextField
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                id="team-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 label="Team name"
-                variant="outlined"
                 size="small"
                 fullWidth
               />
 
+              {/* Color picker */}
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-slate-700">
-                  Team color
-                </span>
+                <span className="text-xs font-semibold text-slate-600">Team color</span>
 
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-slate-600">
                     <span
-                      className="inline-block h-4 w-4 rounded-full border border-slate-300"
-                      style={{ backgroundColor: teamColor }}
+                      className="h-4 w-4 rounded-full border border-slate-300"
+                      style={{ backgroundColor: color }}
                     />
-                    <span>{teamColor}</span>
+                    <span className="font-mono">{color}</span>
                   </div>
 
-                  {/* Wrapper relativ, Picker mit hohem z-index */}
                   <div
-                    className="relative z-100 h-8 w-28 flex justify-center items-center rounded-full border border-slate-300 cursor-pointer bg-white"
-                    style={{ backgroundColor: teamColor + "22" }}
-                    onClick={() => setShowColorPicker((prev) => !prev)}
+                    className="relative cursor-pointer"
+                    onClick={() => setShowPicker((x) => !x)}
                   >
-                    <button
-                      type="button"
-                      className="w-10 h-8 flex justify-center items-center rounded-full bg-white/80 text-slate-800 text-[11px] hover:bg-white shadow-sm"
+                    <div
+                      className="h-8 w-24 rounded-full border border-slate-300 flex items-center justify-center bg-white shadow"
+                      style={{ backgroundColor: color + "22" }}
                     >
-                      {!showColorPicker ? "Pick" : "OK"}
-                    </button>
+                      {showPicker ? "OK" : "Pick"}
+                    </div>
 
-                    {showColorPicker && (
+                    {showPicker && (
                       <div
+                        className="absolute bottom-full right-0 mb-2 z-[9999] p-3 bg-slate-900 rounded-xl shadow-xl"
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-full right-0 mt-2 z-[60] p-2 bg-slate-900 rounded-xl shadow-2xl"
                       >
-                        <div className="h-[220px] w-[220px]">
-                          <HexColorPicker
-                            color={teamColor}
-                            onChange={setTeamColor}
-                            className="h-full w-full"
-                          />
-                        </div>
+                        <HexColorPicker color={color} onChange={setColor} />
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-2 flex justify-end gap-2">
+              <div className="flex justify-end gap-2">
                 <Button
-                  onClick={() => setShowCreatePanel(false)}
                   variant="outlined"
                   size="small"
-                  style={{
-                    textTransform: "none",
-                    borderColor: "rgba(148,163,184,0.9)",
-                    color: "#334155",
-                  }}
+                  style={{ textTransform: "none" }}
+                  onClick={() => setShowCreate(false)}
                 >
                   Cancel
                 </Button>
+
                 <Button
-                  onClick={handleCreateTeam}
                   variant="contained"
                   size="small"
-                  disabled={!teamName.trim()}
-                  style={{
-                    textTransform: "none",
-                  }}
+                  disabled={!name.trim() || creating}
+                  style={{ textTransform: "none" }}
+                  onClick={handleCreate}
                 >
-                  Create
+                  {creating ? (
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="animate-spin" size={16} />
+                      Creating…
+                    </span>
+                  ) : (
+                    "Create"
+                  )}
                 </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Team list – optisch an SmTeamCard angelehnt */}
-        <section className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm p-4 sm:p-6 flex-1 z-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold tracking-[0.12em] uppercase text-slate-500">
+        {/* Team grid */}
+        <section className="rounded-2xl bg-white border border-slate-200 shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xs uppercase font-semibold tracking-wide text-slate-500">
               Teams in this project
             </h2>
             <span className="text-xs text-slate-400">
               {loading
                 ? "Loading…"
-                : hasTeams
-                ? `${teams.length} team${teams.length === 1 ? "" : "s"}`
-                : "No teams yet"}
+                : teams.length === 0
+                ? "No teams"
+                : `${teams.length} team${teams.length === 1 ? "" : "s"}`}
             </span>
           </div>
 
           {loading ? (
-            <div className="py-10 text-center text-xs text-slate-500">
-              Loading teams…
+            <div className="flex flex-col items-center py-10 gap-2 text-slate-500">
+              <Loader2 className="animate-spin" />
+              <span className="text-xs">Loading teams…</span>
             </div>
-          ) : hasTeams ? (
+          ) : teams.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-slate-500 gap-3">
+              <Users size={22} className="text-slate-300" />
+              <p className="text-sm">No teams yet — create your first one!</p>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {teams.map((team) => {
-                const color = team.color || "#0f172a";
-                const tasks = team.tasks || [];
+                const initial = team.name?.[0]?.toUpperCase() || "T";
+
                 return (
                   <div
                     key={team.id}
-                    className="
-                      w-full max-w-[320px]
-                      rounded-xl border border-slate-300
-                      bg-white shadow-sm hover:shadow-lg
-                      transition-shadow duration-150
-                      flex flex-col overflow-hidden
-                    "
+                    className="rounded-xl border border-slate-200 bg-white shadow hover:shadow-lg transition p-4 flex flex-col gap-4"
                   >
-                    {/* Color banner */}
                     <div
-                      className="h-3 w-full"
-                      style={{ backgroundColor: color }}
+                      className="h-2 w-full rounded"
+                      style={{ backgroundColor: team.color }}
                     />
 
-                    <div className="p-4 flex flex-col gap-3 h-full">
-                      {/* Header ähnlich SmTeamCard */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="h-10 w-10 rounded-full border border-slate-200 shadow-sm flex items-center justify-center text-sm font-bold text-slate-900"
-                            style={{ backgroundColor: color + "aa" }}
-                          >
-                            {team.name?.[0]?.toUpperCase() || "T"}
-                          </span>
-
-                          <div>
-                            <h3 className="text-base font-semibold text-slate-900 truncate max-w-[150px]">
-                              {team.name}
-                            </h3>
-                            <p className="text-[11px] text-slate-600">
-                              {color}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Kleine Info zu Tasks, falls vorhanden */}
-                      <div className="flex flex-col flex-1">
-                        <p className="text-[12px] font-semibold text-slate-700 mb-1">
-                          Tasks ({tasks.length})
-                        </p>
-
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
                         <div
-                          className="rounded-md p-2 max-h-32 overflow-y-auto border"
-                          style={{
-                            backgroundColor: color + "15",
-                            borderColor: color + "40",
-                          }}
+                          className="h-10 w-10 rounded-full shadow flex items-center justify-center text-sm font-bold text-slate-900"
+                          style={{ backgroundColor: team.color + "aa" }}
                         >
-                          {tasks.length > 0 ? (
-                            <ul className="flex flex-col gap-1">
-                              {tasks.map((task) => (
-                                <li
-                                  key={task.id}
-                                  className="
-                                    text-[12px] bg-white rounded-md px-2 py-1 
-                                    border border-slate-200 flex items-center shadow-sm
-                                  "
-                                >
-                                  <span className="mr-1 text-slate-400">•</span>
-                                  <span className="truncate">{task.name}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-[11px] text-slate-500">
-                              No tasks assigned yet.
-                            </p>
-                          )}
+                          {initial}
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-slate-900 truncate max-w-[150px]">
+                            {team.name}
+                          </h3>
+                          <p className="text-xs font-mono text-slate-500">
+                            {team.color}
+                          </p>
                         </div>
                       </div>
+
+                      <button
+                        title="Delete team"
+                        disabled={deletingId === team.id}
+                        onClick={() => handleDelete(team.id, team.name)}
+                        className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500"
+                      >
+                        {deletingId === team.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-slate-500">
+                      {team.tasks?.length || 0} tasks assigned
                     </div>
                   </div>
                 );
               })}
-            </div>
-          ) : (
-            <div className="py-10 text-center text-sm text-slate-500">
-              No teams yet. Click{" "}
-              <span className="font-semibold text-slate-900">
-                “New Team”
-              </span>{" "}
-              to create the first one ✨
             </div>
           )}
         </section>

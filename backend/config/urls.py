@@ -190,33 +190,7 @@ path(
         name="all_attempts_for_this_project",
     ),
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    path("api/orgarhythmus/projects/<int:project_id>/teams/<int:team_id>/", views.project_team_detail),
 
 
 
