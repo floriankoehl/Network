@@ -40,6 +40,7 @@ export async function fetch_all_attempts() {
     return data;
   }
 
+console.log("ALL att inside the api_______ ", data.attempts)
   return data.attempts || [];
 }
 

@@ -1320,7 +1320,7 @@ def all_teams_for_this_project(request, project_id):
             "tasks__vortakte", # Task → Dependency (where this task is child)
             "tasks__nachtakte" # Task → Dependency (where this task is parent)
         )
-        .filter(id=project_id)
+        .filter(project_id=project_id)
     )
 
     data = [serialize_team(team) for team in all_teams]
@@ -1330,6 +1330,40 @@ def all_teams_for_this_project(request, project_id):
 
 
 
+from django.http import JsonResponse
+from .models import Attempt, Task
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def all_attempts_for_this_project(request, project_id):
+    # 1) All attempts whose task belongs to this project
+    all_attempts = (
+        Attempt.objects
+        .select_related("task")        # so we don't hit the DB again per attempt
+        .filter(task__project_id=project_id)
+    )
+
+    # 2) Manually build the structure you showed:
+    #    0: {id: 93, name: "c_0", number: 1, slot_index: 2,
+    #        task: {id: 10, name: "c"}}
+    data = []
+    for a in all_attempts:
+        task_obj = a.task  # thanks to select_related
+        data.append({
+            "id": a.id,
+            "name": getattr(a, "name", None),
+            "number": getattr(a, "number", None),
+            "slot_index": getattr(a, "slot_index", None),
+            "task": {
+                "id": task_obj.id if task_obj else None,
+                "name": task_obj.name if task_obj else None,
+            } if task_obj else None,
+        })
+
+    # 3) Wrap in {"attempts": ...} so your frontend can keep doing
+    #    const all_attempts2 = await fetch_all_attempts();
+    #    all_attempts2.attempts.map(...)
+    return JsonResponse({"attempts": data}, status=200)
 
 
 

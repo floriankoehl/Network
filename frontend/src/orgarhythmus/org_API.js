@@ -140,20 +140,21 @@ function getCurrentProjectIdFromLocation() {
 
 
 export async function fetch_all_teams() {
-    const projectId = getCurrentProjectIdFromLocation();
-    const res = await fetch(`${BASE_URL}/api/orgarhythmus/${projectId}/all_teams_for_this_project/`)
+  const projectId = getCurrentProjectIdFromLocation();
 
-    if (!res.ok) {
-        console.log("Something went wrong calling teams in api.js")
-        return
-    }
+  const res = await fetch(
+    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_teams_for_this_project/`
+  );
 
-    const data = await res.json()
+  if (!res.ok) {
+    console.log("Something went wrong calling teams in api.js");
+    return;
+  }
 
-    // console.log("The fetched teams from api: ", data)
-    return data.teams
-
+  const data = await res.json();
+  return data.teams;
 }
+
 
 
 
@@ -254,14 +255,40 @@ export async function delete_dependency(dep_id){
 //_______________________________________________
 
 
+// export async function fetch_all_attempts(){
+//   const token = localStorage.getItem("access_token")
+
+//   if (!token) {
+//     throw redirect("/login")
+//   }
+
+//   const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempts/`, {
+//     headers: {
+//       "Authorization": `Bearer ${token}`
+//     }
+//   })
+
+//   if (res.status === 401 || res.status === 403) {
+//     throw new Error("Could not load tasks");
+//   }
+
+//   const data = await res.json();
+//   // console.log("The fetched attempts from the API", data)
+
+//   console.log("simply doesnt return antyhitn ganymore: ", data)
+//   return data
+// }
+
+
 export async function fetch_all_attempts(){
+  const projectId = getCurrentProjectIdFromLocation();
   const token = localStorage.getItem("access_token")
 
   if (!token) {
     throw redirect("/login")
   }
 
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempts/`, {
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_attempts_for_this_project`, {
     headers: {
       "Authorization": `Bearer ${token}`
     }
@@ -273,9 +300,10 @@ export async function fetch_all_attempts(){
 
   const data = await res.json();
   // console.log("The fetched attempts from the API", data)
-  return data
-}
 
+  console.log("simply doesnt return antyhitn ganymore: ", data)
+  return data.attempts
+}
 
 
 // export async function add_attempt_dependecy(

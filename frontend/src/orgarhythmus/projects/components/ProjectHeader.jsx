@@ -38,10 +38,10 @@ export default function ProjectHeader({ }) {
   const navItems = [
   {
     key: "tasks",
-    to: projectId ? `/orgarhythmus/projects/${projectId}/teams` : "/orgarhythmus/projects",
+    to: projectId ? `/orgarhythmus/projects/${projectId}/tasks` : "/orgarhythmus/projects",
     label: "Tasks",
     icon: <ListIcon fontSize="small" />,
-    end: true,
+    // end: true,
   },
 
   // 🔵 This is now the *project* teams page

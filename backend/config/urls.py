@@ -184,7 +184,11 @@ path(
         views.all_teams_for_this_project,
         name="all_teams_for_this_project",
     ),
-
+path(
+        "api/orgarhythmus/projects/<int:project_id>/all_attempts_for_this_project/",
+        views.all_attempts_for_this_project,
+        name="all_attempts_for_this_project",
+    ),
 
 
 
