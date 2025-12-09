@@ -422,3 +422,219 @@ export async function delete_attempt_dependency(dependency_id) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//_______________________________________________
+//_______________________________________________
+//__________________PROJECTS_____________________
+//_______________________________________________
+//_______________________________________________
+
+export async function fetch_all_projects() {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    throw redirect("/login");
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect("/login");
+  }
+
+  if (!res.ok) {
+    throw new Error("Could not load projects");
+  }
+
+  return await res.json();
+}
+
+export async function create_project_api(name, description) {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    throw redirect("/login");
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/create/`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name,
+      description,
+    }),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect("/login");
+  }
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    console.error("Create project failed:", errorBody);
+    throw new Error(errorBody.detail || "Failed to create project");
+  }
+
+  return await res.json();
+}
+
+
+
+
+
+
+
+
+export async function fetch_project_detail(projectId) {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    throw redirect("/login");
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect("/login");
+  }
+
+  if (!res.ok) {
+    throw new Error("Could not load project");
+  }
+
+  return await res.json();
+}
+
+
+import { authFetch } from "../auth";  // Pfad ggf. anpassen
+
+
+
+
+
+//_____*********______________ TEAMS ___________________********____
+
+//_______________________________________________
+
+// orgarhythmus/org_API_teams.js
+
+
+export async function fetchTeamsForProject(projectId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
+    method: "GET",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch teams for project");
+  }
+
+  return await res.json();
+}
+
+export async function createTeamForProject(projectId, payload) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    // Content-Type setzt authFetch automatisch
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to create team");
+  }
+
+  return await res.json();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function fetchTasksForProject(projectId) {
+  const res = await authFetch(
+    `/api/orgarhythmus/projects/${projectId}/tasks/`,
+    {
+      method: "GET",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch tasks for project");
+  }
+
+  const data = await res.json();
+  // falls dein Backend { tasks: [...] } zurückgibt, nimm data.tasks
+  return data.tasks || data;
+}
+
+export async function createTaskForProject(projectId, payload) {
+  const res = await authFetch(
+    `/api/orgarhythmus/projects/${projectId}/tasks/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+      // Content-Type kommt von authFetch
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to create project task");
+  }
+
+  return await res.json();
+}
+
+
+
+
+
+
+

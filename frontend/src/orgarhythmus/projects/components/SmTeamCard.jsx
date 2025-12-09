@@ -1,5 +1,5 @@
 import Button from "@mui/material/Button";
-import { BASE_URL } from "../../config/api";
+import { BASE_URL } from "../../../config/api";
 
 export default function SmTeamCard({ team, setAll_Teams }) {
   const color = team.color || "#0f172a";

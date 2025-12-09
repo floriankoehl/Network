@@ -1,9 +1,9 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layouts/MainLayout.jsx"
-import Home, {comment_loader} from "./pages/Home";
+import Home, { comment_loader } from "./pages/Home";
 import Register from "./pages/Register.jsx";
-import Network, {all_user_loader} from "./pages/Network.jsx";
-import Profile, {profile_loader} from "./pages/Profile.jsx";
+import Network, { all_user_loader } from "./pages/Network.jsx";
+import Profile, { profile_loader } from "./pages/Profile.jsx";
 import Login from "./pages/Login.jsx"
 // import Graph from "./pages/Graph.jsx";
 // import Graph_2 from "./pages/Graph_2/Graph_2.jsx";
@@ -13,7 +13,7 @@ import Landing from "./pages/Landing.jsx";
 // import GraphWrapper from "./pages/Graph_2/GraphWrapper.jsx";
 // import Graph_4_Wrapper from "./pages/Graph_2/Graph_4_Wrapper.jsx";
 import GraphWrapper from "./pages/Graph_Page/GraphWrapper.jsx"
-import Skills, {skills_loader_function} from "./pages/Skills/Skills.jsx";
+import Skills, { skills_loader_function } from "./pages/Skills/Skills.jsx";
 import SkillsWrapper from "./pages/Skills/SkillsWrapper.jsx";
 import CommentWall from "./pages/CommentWall.jsx";
 
@@ -28,6 +28,11 @@ import RegisterPage from "./pages/RegisterPage";
 import Dependencies from "./orgarhythmus/org_pages/Dependencies.jsx";
 import DependenciesWrapper from "./orgarhythmus/org_pages/DependenciesWrapper.jsx";
 import OrgAttemptsWrapper from "./orgarhythmus/org_pages/OrgAttemptsWrapper.jsx";
+import ProjectLayout from "./orgarhythmus/org_layouts/ProjectLayout.jsx";
+import ProjectMain, { project_loader } from "./orgarhythmus/projects/pages/ProjectMain.jsx";
+import OrgaProjects from "./orgarhythmus/projects/components/OrgaProjects.jsx";
+import ProjectTeams from "./orgarhythmus/projects/pages/ProjectTeams.jsx"
+import ProjectTasks from "./orgarhythmus/projects/pages/ProjectTasks.jsx";
 
 
 const router = createBrowserRouter([
@@ -35,34 +40,50 @@ const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <CommentWall />},
-      { path:"/comment_wall", element: <CommentWall/>},
-      { path:"/landing", element: <Landing/>},
-      { path:"/login", element: <LoginPage/>},
-      { path:"/register", element: <RegisterPage/>},
-      { path:"/profile", element: <ProfilePage/>},
+      { index: true, element: <CommentWall /> },
+      { path: "/comment_wall", element: <CommentWall /> },
+      { path: "/landing", element: <Landing /> },
+      { path: "/login", element: <LoginPage /> },
+      { path: "/register", element: <RegisterPage /> },
+      { path: "/profile", element: <ProfilePage /> },
       // { path:"/register", element: <Register/>},
       // { path:"/login", element: <Login/>},
-      { path:"/network", element: <Network/>, loader: all_user_loader},
+      { path: "/network", element: <Network />, loader: all_user_loader },
       // { path:"/graph", element: <Graph/>},  
       // { path:"/graph_2", element: <Graph_2/>},   
-      { path:"/graph_3", element: <GraphWrapper/>},  
-      { path:"/graph", element: <GraphWrapper/>},  
+      { path: "/graph_3", element: <GraphWrapper /> },
+      { path: "/graph", element: <GraphWrapper /> },
       { path: "/skills", element: <SkillsWrapper />, loader: skills_loader_function },
-      
+
 
     ],
-    },
-    {
+  },
+  {
     path: "/orgarhythmus",
     element: <OrgaLayout />,
     children: [
       { index: true, element: <OrgaHome />, loader: fetch_all_tasks },
-      { path:"all_teams", element: <OrgaAllTeams/>, loader: fetch_all_teams},  
-      { path:"dependencies", element: <DependenciesWrapper/>},  
-      { path:"attempts", element: <OrgAttemptsWrapper/>}
+      { path: "all_teams", element: <OrgaAllTeams />, loader: fetch_all_teams },
+      { path: "dependencies", element: <DependenciesWrapper /> },
+      { path: "attempts", element: <OrgAttemptsWrapper /> },
+      { path: "projects", element: <OrgaProjects /> },
+      {
+        path: "projects/:projectId",
+        element: <ProjectLayout />,
+        children: [
+          {
+            index: true,
+            element: <ProjectMain />,
+            loader: project_loader,
+          },
+          { path: "teams", element: <ProjectTeams/>},
+          { path: "tasks", element: <ProjectTasks/>}
+        ],
+      },
+
     ],
   },
+
 ]);
 
 export default function App() {

@@ -5,7 +5,7 @@ import { Palette, Plus, X, Users } from "lucide-react";
 import { HexColorPicker } from "react-colorful";
 import { BASE_URL } from "../../config/api";
 import { useLoaderData, useRevalidator } from "react-router-dom";
-import SmTeamCard from "../org_components/SmTeamCard";
+import SmTeamCard from "../projects/components/SmTeamCard";
 
 /* --------- Small stats bar for teams ---------- */
 function TeamStats({ teams }) {

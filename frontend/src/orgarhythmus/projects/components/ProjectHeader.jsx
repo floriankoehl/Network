@@ -5,7 +5,7 @@
 // - Uses MUI icons for the menu items
 
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
 
 // MUI Icons
 import HomeIcon from "@mui/icons-material/Home";
@@ -20,30 +20,53 @@ import ListIcon from '@mui/icons-material/List';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../../auth/AuthContext";
 import ChatIcon from '@mui/icons-material/Chat';
 import { ListOrdered } from 'lucide-react';
 import ReplayIcon from '@mui/icons-material/Replay';
 import NumbersIcon from '@mui/icons-material/Numbers';
 import { FolderOpenDot, Folder } from 'lucide-react';
 
-export default function OrgaHeader() {
+export default function ProjectHeader({ }) {
   // Controls whether the mobile menu is open or closed
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAuthenticated, loadingUser, logout } = useAuth();
+  const { projectId } = useParams();   
 
 
   // Central definition of your nav items, so it's easy to change later
   const navItems = [
-    // { to: "/orgarhythmus", label: "Tasks", icon: <ListIcon fontSize="small" />, end: true },
-    // { to: "/orgarhythmus/all_teams", label: "Teams", icon: <Diversity3Icon fontSize="small" /> },
-    // { to: "/orgarhythmus/dependencies", label: "Dependencies", icon: <ListOrdered fontSize="small" /> },
-    // { to: "/orgarhythmus/attempts", label: "Attempts", icon: <NumbersIcon fontSize="small" /> },
-    { to: "/orgarhythmus/projects", label: "Projects", icon: <Folder size={18} /> },
-    { to: "/landing", label: "Go back", icon: <ReplayIcon fontSize="small" /> },
-    
-    
-  ];
+  {
+    key: "tasks",
+    to: projectId ? `/orgarhythmus/projects/${projectId}/tasks` : "/orgarhythmus/projects",
+    label: "Tasks",
+    icon: <ListIcon fontSize="small" />,
+    end: true,
+  },
+
+  // 🔵 This is now the *project* teams page
+  {
+    key: "project-teams",
+    to: projectId ? `/orgarhythmus/projects/${projectId}/teams` : "/orgarhythmus/projects",
+    label: "Teams",
+    icon: <Diversity3Icon fontSize="small" />,
+  },
+
+  // the others can stay global for now
+  {
+    key: "dependencies",
+    to: "/orgarhythmus/dependencies",
+    label: "Dependencies",
+    icon: <ListOrdered fontSize="small" />,
+  },
+  {
+    key: "attempts",
+    to: "/orgarhythmus/attempts",
+    label: "Attempts",
+    icon: <NumbersIcon fontSize="small" />,
+  },
+];
+
 
 
   // Helper function to generate Tailwind classes depending on active state
@@ -174,23 +197,31 @@ export default function OrgaHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2 md:py-3">
         {/* LEFT: Logo / App Title */}
         <NavLink
-          to="/orgarhythmus"
-          className="flex items-center gap-2 text-slate-100 hover:text-cyan-300 transition-colors"
-          onClick={() => setIsOpen(false)} // close menu if on mobile
-        >
-          {/* Tiny "logo dot" */}
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 shadow-md">
-            <PlayCircleIcon/>
-          </span>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-300">
-              Orgarhythmus
-            </span>
-            <span className="text-xs text-slate-300/80">
-              Algorhythmus der Organisation
-            </span>
-          </div>
-        </NavLink>
+  to="/orgarhythmus"
+  className="flex items-center gap-3 text-slate-100 hover:text-cyan-300 transition-colors"
+  onClick={() => setIsOpen(false)}
+>
+  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 shadow-md">
+    <PlayCircleIcon />
+  </span>
+
+  <div className="flex flex-col leading-tight">
+    <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-300">
+      Orgarhythmus
+    </span>
+    <span className="text-xs text-slate-300/80">
+      Algorhythmus der Organisation
+    </span>
+  </div>
+
+  {/* NEW: small project badge if we are inside a project */}
+  {projectId && (
+    <div className="ml-3 inline-flex items-center rounded-full border border-cyan-500/50 bg-cyan-500/10 px-3 py-1 text-[11px] text-cyan-200">
+      Project <span className="ml-1 font-semibold">#{projectId}</span>
+    </div>
+  )}
+</NavLink>
+
 
         {/* RIGHT: Desktop Nav */}
         <nav className="hidden items-center gap-2 md:flex">
