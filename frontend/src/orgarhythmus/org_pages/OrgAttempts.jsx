@@ -16,7 +16,10 @@ import {
   all_dependencies,
   delete_dependency,
   fetch_all_attempts,
-  fetch_all_teams
+  fetch_all_teams,
+  add_attempt_dependency,
+  fetch_all_attempt_dependencies, 
+  update_attempt_slot_index,   
 } from "../org_API";
 import dagre from "@dagrejs/dagre";
 import Button from "@mui/material/Button";
@@ -28,6 +31,25 @@ import snapSoundFile from "../../assets/snap.mp3"
 
 const snapAudio = new Audio(snapSoundFile);
 snapAudio.volume = 0.2; // super subtle
+
+
+
+function extractAttemptId(nodeId) {
+  if (!nodeId) return null;
+
+  // If it looks like "attempt-19"
+  if (nodeId.startsWith("attempt-")) {
+    const num = parseInt(nodeId.replace("attempt-", ""), 10);
+    return Number.isNaN(num) ? null : num;
+  }
+
+  // Fallback: maybe it's already just "19"
+  const num = parseInt(nodeId, 10);
+  return Number.isNaN(num) ? null : num;
+}
+
+
+
 
 function playSnapSound() {
   // try/catch so it doesn’t explode if browser blocks it
@@ -45,23 +67,61 @@ function get_overall_gap(num_tasks, gap, header_gap) {
 
 
 
-function snapAttemptX(x) {
-  // x ist die aktuelle position.x des AttemptNodes (relativ zum TaskNode)
-  const GRID_OFFSET = TASK_SIDEBAR_WIDTH;
+function getSlotIndexFromX(x) {
+  const relative = x - TASK_SIDEBAR_WIDTH;
 
-  // relative Position ab Grid-Start
-  const relative = x - GRID_OFFSET;
+  let idxZero = Math.round(relative / TASK_WIDTH); // 0-based
+  if (idxZero < 0) idxZero = 0;
+  if (idxZero > ENTRIES - 1) idxZero = ENTRIES - 1;
 
-  // in welchen Slot gehört er? (0-basiert)
-  let slotIndex = Math.round(relative / TASK_WIDTH);
-
-  // clamp, damit er nicht aus dem Grid raus kann
-  if (slotIndex < 0) slotIndex = 0;
-  if (slotIndex > ENTRIES - 1) slotIndex = ENTRIES - 1;
-
-  // neue x-Position = Start dieses Slots
-  return GRID_OFFSET + slotIndex * TASK_WIDTH;
+  return idxZero + 1; // 1-based
 }
+
+function getXFromSlotIndex(slotIndex) {
+  let idxZero = (slotIndex ?? 1) - 1;
+  if (idxZero < 0) idxZero = 0;
+  if (idxZero > ENTRIES - 1) idxZero = ENTRIES - 1;
+
+  return TASK_SIDEBAR_WIDTH + idxZero * TASK_WIDTH;
+}
+
+function snapAttemptX(x) {
+  const slotIndex = getSlotIndexFromX(x);
+  return getXFromSlotIndex(slotIndex);
+}
+
+
+
+
+// function getSlotIndexFromX(x) {
+//   const GRID_OFFSET = TASK_SIDEBAR_WIDTH;        // inside task node
+//   const relative = x - GRID_OFFSET;
+
+//   let idxZero = Math.round(relative / TASK_WIDTH);   // 0-based
+//   if (idxZero < 0) idxZero = 0;
+//   if (idxZero > ENTRIES - 1) idxZero = ENTRIES - 1;
+
+//   return idxZero + 1;     // 1-based slot_index for DB (1..ENTRIES)
+// }
+
+// function getXFromSlotIndex(slotIndex) {
+//   const GRID_OFFSET = TASK_SIDEBAR_WIDTH;
+
+//   // default to 1 if null/undefined
+//   let idxZero = (slotIndex ?? 1) - 1;
+//   if (idxZero < 0) idxZero = 0;
+//   if (idxZero > ENTRIES - 1) idxZero = ENTRIES - 1;
+
+//   return GRID_OFFSET + idxZero * TASK_WIDTH;
+// }
+
+// // update snapAttemptX to reuse this
+// function snapAttemptX(x) {
+//   const slotIndex = getSlotIndexFromX(x);
+//   return getXFromSlotIndex(slotIndex);
+// }
+
+
 
 
 
@@ -278,7 +338,7 @@ function AttemptNode({ data, selected }) {
   return (
     <div
       className={`
-        bg-white rounded-md border  
+        bg-gray-100 hover:bg-gray-700 hover:text-white rounded-md border  
         shadow-sm flex justify-center items-center m-2 text-xs
         transition-all duration-150
         font-bold !text-[15px] text-black shadow-xl shadow-black/2
@@ -449,40 +509,81 @@ export default function OrgAttempts() {
 
 
 
-      async function loadAttempts() {
-        const all_attempts = await fetch_all_attempts();
-        setAll_Attempts(all_attempts)
+      // async function loadAttempts() {
+      //   const all_attempts = await fetch_all_attempts();
+      //   setAll_Attempts(all_attempts)
 
-        const updated_nodes = all_attempts.map((attempt, index) => {
-          return (
-            {
-              id: `attempt-${attempt.id}`,
-              parentNode: `task-${attempt.task.id}`,
-              extent: "parent",
-              type: 'attemptNode', // Add node type
-              position: { x: 0 + TASK_SIDEBAR_WIDTH, y: index * 0 },
-              data: {
-                label: attempt.name,
-                number: attempt.number
-              }
-            }
-          )
-        })
-        setNodes(updated_nodes)
-      };
+      //   const updated_nodes = all_attempts.map((attempt, index) => {
+      //     return (
+      //       {
+      //         id: `attempt-${attempt.id}`,
+      //         parentNode: `task-${attempt.task.id}`,
+      //         extent: "parent",
+      //         type: 'attemptNode', // Add node type
+      //         position: { x: 0 + TASK_SIDEBAR_WIDTH, y: index * 0 },
+      //         data: {
+      //           label: attempt.name,
+      //           number: attempt.number
+      //         }
+      //       }
+      //     )
+      //   })
+      //   setNodes(updated_nodes)
+      // };
+
+    async function loadAttempts() {
+  const all_attempts = await fetch_all_attempts();
+  setAll_Attempts(all_attempts);
+
+  const updated_nodes = all_attempts.map((attempt, index) => {
+    const x = getXFromSlotIndex(attempt.slot_index);  // 👈 use DB value, default inside helper
+
+    return {
+      id: `attempt-${attempt.id}`,
+      parentNode: `task-${attempt.task.id}`,
+      extent: "parent",
+      type: "attemptNode",
+      position: { x, y: index * 0 },   // y stays as before
+      data: {
+        label: attempt.name,
+        number: attempt.number,
+      },
+    };
+  });
+
+  setNodes(updated_nodes);
+}
+
+
 
       // async function loadTasks() {
       //   const all_tasks = await fetch_all_tasks();
       //   setAll_Tasks(all_tasks)
       // }
 
+       // 🔥 NEW: load all existing attempt dependencies and turn them into edges
+    async function loadAttemptDependencies() {
+      const deps = await fetch_all_attempt_dependencies();
 
+      const initialEdges = deps.map((dep) => ({
+        id: `attemptdep-${dep.id}`,
+        source: `attempt-${dep.vortakt_attempt_id}`,
+        target: `attempt-${dep.nachtakt_attempt_id}`,
+        type: "default",
+        animated: true,
+        interactionWidth: 20,
+        style: { strokeWidth: 2 },
+      }));
+
+      setEdges(initialEdges);
+    }
 
 
 
       //Calling all load functions: 
       await loadTeams();
       await loadAttempts();
+      await loadAttemptDependencies();
       // await loadTasks();  
     }
     loadData()
@@ -523,34 +624,115 @@ export default function OrgAttempts() {
 
 
 
+// const onNodeDragStop = useCallback((event, node) => {
+//   if (node.type !== "attemptNode") return;
+
+//   setMergedNodes((nds) =>
+//     nds.map((n) => {
+//       if (n.id !== node.id) return n;
+
+//       const snappedX = snapAttemptX(node.position.x);
+//       const didSnap = snappedX !== node.position.x;
+
+//       if (didSnap) {
+//         playSnapSound();
+//       }
+
+//       return {
+//         ...n,
+//         position: {
+//           ...n.position,
+//           x: snappedX,
+//         },
+//         data: {
+//           ...n.data,
+//           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
+//         },
+//       };
+//     })
+//   );
+// }, []);
+
+// const onNodeDragStop = useCallback((event, node) => {
+//   if (node.type !== "attemptNode") return;
+
+//   // 1) Compute slot_index from current x
+//   const slotIndex = getSlotIndexFromX(node.position.x);
+//   const snappedX = getXFromSlotIndex(slotIndex);
+//   const didSnap = snappedX !== node.position.x;
+
+//   // 2) Update local ReactFlow state
+//   setMergedNodes((nds) =>
+//     nds.map((n) => {
+//       if (n.id !== node.id) return n;
+
+//       if (didSnap) {
+//         playSnapSound();
+//       }
+
+//       return {
+//         ...n,
+//         position: {
+//           ...n.position,
+//           x: snappedX,
+//         },
+//         data: {
+//           ...n.data,
+//           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
+//           slot_index: slotIndex,    // optional: keep locally as well
+//         },
+//       };
+//     })
+//   );
+
+//   // 3) Persist to backend
+//   const attemptId = extractAttemptId(node.id);   // "attempt-19" → 19
+
+//   if (!attemptId) {
+//     console.error("Could not parse attemptId from node.id:", node.id);
+//     return;
+//   }
+
+//   (async () => {
+//     try {
+//       const res = await update_attempt_slot_index(attemptId, slotIndex);
+//       console.log("Slot index updated:", res);
+//     } catch (err) {
+//       console.error("Failed to update slot index:", err);
+//       // optional: show toast, revert position, etc.
+//     }
+//   })();
+// }, [setMergedNodes]);
+
 const onNodeDragStop = useCallback((event, node) => {
   if (node.type !== "attemptNode") return;
 
+  const slotIndex = getSlotIndexFromX(node.position.x);
+  const snappedX = getXFromSlotIndex(slotIndex);
+
   setMergedNodes((nds) =>
-    nds.map((n) => {
-      if (n.id !== node.id) return n;
-
-      const snappedX = snapAttemptX(node.position.x);
-      const didSnap = snappedX !== node.position.x;
-
-      if (didSnap) {
-        playSnapSound();
-      }
-
-      return {
-        ...n,
-        position: {
-          ...n.position,
-          x: snappedX,
-        },
-        data: {
-          ...n.data,
-          justSnapped: didSnap ? Date.now() : n.data.justSnapped,
-        },
-      };
-    })
+    nds.map((n) =>
+      n.id === node.id
+        ? {
+            ...n,
+            position: { ...n.position, x: snappedX },
+          }
+        : n
+    )
   );
-}, []);
+
+  const attemptId = extractAttemptId(node.id); // "attempt-19" -> 19
+  if (!attemptId) return;
+
+  (async () => {
+    try {
+      const res = await update_attempt_slot_index(attemptId, slotIndex);
+      console.log("Slot index saved:", res);
+    } catch (err) {
+      console.error("Failed to save slot index:", err);
+    }
+  })();
+}, [setMergedNodes]);
 
 
 
@@ -558,27 +740,90 @@ const onNodeDragStop = useCallback((event, node) => {
   setEdges((eds) => applyEdgeChanges(changes, eds));
 }, []);
 
+// const onConnect = useCallback((connection) => {
+//   console.log("onConnect fired:", connection);
+
+//   setEdges((eds) => {
+//     const newEdges = addEdge(
+//       {
+//         ...connection,
+//         type: "default",     // 👈 curved edge, less hidden behind nodes
+//         animated: true,
+//         interactionWidth: 20,   // 👈 big click area around the line
+//         style: { strokeWidth: 2 },
+//       },
+//       eds
+//     );
+//     console.log("edges now:", newEdges);
+//     return newEdges;
+//   });
+// }, []);
+
+// const onConnect = useCallback((connection) => {
+//   console.log("onConnect fired:", connection);
+
+//   // 1) Call backend – connection.source/target = node IDs
+//   (async () => {
+//     try {
+//       const res = await add_attempt_dependency(
+//         connection.source,   // vortakt_attempt_id
+//         connection.target    // nachtakt_attempt_id
+//       );
+//       console.log("Dependency created:", res);
+
+//       // 2) If backend ok → update edges in frontend
+//       setEdges((eds) =>
+//         addEdge(
+//           {
+//             ...connection,
+//             type: "default",
+//             animated: true,
+//             interactionWidth: 20,
+//             style: { strokeWidth: 2 },
+//           },
+//           eds
+//         )
+//       );
+//     } catch (err) {
+//       console.error("Failed to create attempt dependency:", err);
+//       // Optional: show toast or revert UI
+//     }
+//   })();
+// }, [setEdges]);
+
 const onConnect = useCallback((connection) => {
   console.log("onConnect fired:", connection);
 
-  setEdges((eds) => {
-    const newEdges = addEdge(
-      {
-        ...connection,
-        type: "default",     // 👈 curved edge, less hidden behind nodes
-        animated: true,
-        interactionWidth: 20,   // 👈 big click area around the line
-        style: { strokeWidth: 2 },
-      },
-      eds
-    );
-    console.log("edges now:", newEdges);
-    return newEdges;
-  });
-}, []);
+  const vortaktId = extractAttemptId(connection.source);
+  const nachtaktId = extractAttemptId(connection.target);
 
+  if (!vortaktId || !nachtaktId) {
+    console.error("Could not parse attempt IDs from nodes:", connection);
+    return;
+  }
 
+  (async () => {
+    try {
+      const res = await add_attempt_dependency(vortaktId, nachtaktId);
+      console.log("Dependency created:", res);
 
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            type: "default",
+            animated: true,
+            interactionWidth: 20,
+            style: { strokeWidth: 2 },
+          },
+          eds
+        )
+      );
+    } catch (err) {
+      console.error("Failed to create attempt dependency:", err);
+    }
+  })();
+}, [setEdges]);
 
 
 
@@ -588,7 +833,7 @@ const onConnect = useCallback((connection) => {
     <>
       <div
         style={{ height: `${y_reactflow_size}px` }}
-        className="w-screen 
+        className="w-screen
              flex justify-center items-center 
              m-20 lg:max-w-full  lg:px-10 md:max-w-[700px] sm:max-w-full p-3
              "

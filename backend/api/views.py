@@ -420,12 +420,192 @@ class AttemptSerializer(serializers.ModelSerializer):
 
 from rest_framework.response import Response
 
+# @api_view(["GET"])
+# @permission_classes([AllowAny])
+# def all_attempts(request):
+#     attempts = Attempt.objects.all()
+#     serializer = AttemptSerializer(attempts, many=True)  # Use the AttemptSerializer we created
+#     return Response(serializer.data, status=200)
+#
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def all_attempts(request):
-    attempts = Attempt.objects.all()
-    serializer = AttemptSerializer(attempts, many=True)  # Use the AttemptSerializer we created
-    return Response(serializer.data, status=200)
+    attempts = Attempt.objects.all().select_related("task")
+
+    data = [
+        {
+            "id": a.id,
+            "task": {"id": a.task.id, "name": a.task.name},  # or just a.task.id
+            "name": a.name,
+            "number": a.number,
+            "slot_index": a.slot_index,  # 👈 IMPORTANT
+        }
+        for a in attempts
+    ]
+
+    return JsonResponse(data, safe=False, status=200)
+
+
+
+
+#Attempts dependecies:
+
+# def add_dependency(request):
+#     print("Pipeline works")
+#     if request.method != "POST":
+#         return JsonResponse({"error": "Only POST allowed"}, status=405)
+#
+#     body = json.loads(request.body)
+#     vortakt_id = body.get("vortakt_id")
+#     nachtakt_id = body.get("nachtakt_id")
+#
+#     vortakt_task = Task.objects.get(id=vortakt_id)
+#     nachtakt_task = Task.objects.get(id=nachtakt_id)
+#
+#     dependency, created = Dependency.objects.get_or_create(
+#         vortakt=vortakt_task,
+#         nachtakt=nachtakt_task
+#     )
+#
+#     if created:
+#         return JsonResponse({
+#             "id": dependency.id,
+#             "vortakt": vortakt_task.id,
+#             "nachtakt": nachtakt_task.id,
+#             "status": "success",
+#             "created": True,
+#         }, status=201)
+#     else:
+#         return JsonResponse({
+#             "id": dependency.id,
+#             "vortakt": vortakt_task.id,
+#             "nachtakt": nachtakt_task.id,
+#             "status": "already_exists",
+#             "created": False,
+#         }, status=200)
+
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+import json
+
+from .models import Attempt, AttemptDependency
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def add_attempt_dependency(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    # ✅ match the keys sent from frontend
+    vortakt_attempt_id = body.get("vortakt_attempt_id")
+    nachtakt_attempt_id = body.get("nachtakt_attempt_id")
+
+    if not vortakt_attempt_id or not nachtakt_attempt_id:
+        return JsonResponse({"error": "Missing vortakt_attempt_id or nachtakt_attempt_id"}, status=400)
+
+    try:
+        vortakt_attempt = Attempt.objects.get(id=vortakt_attempt_id)
+        nachakt_attempt = Attempt.objects.get(id=nachtakt_attempt_id)
+    except Attempt.DoesNotExist:
+        return JsonResponse({"error": "One of the attempts does not exist"}, status=404)
+
+    # ✅ use the correct model: AttemptDependency
+    vortakt_dependency, created = AttemptDependency.objects.get_or_create(
+        vortakt_attempt=vortakt_attempt,
+        nachtakt_attempt=nachakt_attempt
+    )
+
+    print("Attempt Dependency added", vortakt_dependency)
+
+    return JsonResponse({
+        "id": vortakt_dependency.id,
+        "vortakt": vortakt_attempt.id,
+        "nachtakt": nachakt_attempt.id,
+        "status": "success" if created else "already_exists",
+        "created": created,
+    })
+
+
+
+
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from .models import AttemptDependency
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def list_attempt_dependencies(request):
+    """
+    Return all AttemptDependency objects as a simple JSON list.
+    """
+    deps = AttemptDependency.objects.all().select_related("vortakt_attempt", "nachtakt_attempt")
+
+    data = [
+        {
+            "id": dep.id,
+            "vortakt_attempt_id": dep.vortakt_attempt_id,
+            "nachtakt_attempt_id": dep.nachtakt_attempt_id,
+            "type": dep.type
+        }
+        for dep in deps
+    ]
+
+    return JsonResponse(data, safe=False, status=200)
+
+
+
+
+
+import json
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from .models import Attempt
+
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def update_attempt_slot_index(request):
+#     """
+#     Update the slot_index of a single Attempt.
+#     Body: { "attempt_id": <int>, "slot_index": <int> }
+#     """
+#     try:
+#         body = json.loads(request.body)
+#     except json.JSONDecodeError:
+#         return JsonResponse({"error": "Invalid JSON"}, status=400)
+#
+#     attempt_id = body.get("attempt_id")
+#     slot_index = body.get("slot_index")
+#
+#     if attempt_id is None or slot_index is None:
+#         return JsonResponse({"error": "attempt_id and slot_index are required"}, status=400)
+#
+#     try:
+#         attempt = Attempt.objects.get(id=attempt_id)
+#     except Attempt.DoesNotExist:
+#         return JsonResponse({"error": "Attempt not found"}, status=404)
+#
+#     # you can clamp here if you want (1..ENTRIES)
+#     attempt.slot_index = int(slot_index)
+#     attempt.save()
+#
+#     return JsonResponse({
+#         "id": attempt.id,
+#         "slot_index": attempt.slot_index,
+#         "status": "updated",
+#     }, status=200)
+#
 
 
 
@@ -435,23 +615,36 @@ def all_attempts(request):
 
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def update_attempt_slot_index(request):
+    import json
+    from .models import Attempt
 
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
+    attempt_id = body.get("attempt_id")
+    slot_index = body.get("slot_index")
 
+    if attempt_id is None or slot_index is None:
+        return JsonResponse({"error": "attempt_id and slot_index are required"}, status=400)
 
+    try:
+        attempt = Attempt.objects.get(id=attempt_id)
+    except Attempt.DoesNotExist:
+        return JsonResponse({"error": "Attempt not found"}, status=404)
 
+    attempt.slot_index = int(slot_index)
+    attempt.save()
 
-
-
-
-
-
-
-
-
-
-
-
+    return JsonResponse({
+        "id": attempt.id,
+        "slot_index": attempt.slot_index,
+        "status": "updated",
+    }, status=200)
 
 
 

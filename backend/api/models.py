@@ -72,10 +72,25 @@ class Attempt(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='attempts')
     name = models.CharField(max_length=200, blank=True, null=True)
     number = models.IntegerField()  # Remove blank=True, null=True if it's always required
+    slot_index = models.IntegerField(blank=True, null=True)
 
     class Meta:
         unique_together = ('task', 'number')  # Prevent duplicate attempt numbers
         ordering = ['number']  # Always order by attempt number
 
+
+
+
+
+class AttemptDependency(models.Model):
+    vortakt_attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name='nachtakt_attempts')
+    nachtakt_attempt = models.ForeignKey(Attempt, on_delete=models.CASCADE, related_name='vortakt_attempts')
+    type = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.vortakt_attempt.name} -> {self.nachtakt_attempt.name}"
+
+    class Meta:
+        unique_together = ('vortakt_attempt', 'nachtakt_attempt')
 
 

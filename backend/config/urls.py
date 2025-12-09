@@ -47,13 +47,18 @@ add_dependency,
 all_dependencies,
 delete_dependency,
 
+
+
 #USER AUTHENTICATION & REGISTRATION
 register_user,
 check_auth,
 
 
 #ATTEMPS:
-all_attempts
+all_attempts,
+add_attempt_dependency,
+list_attempt_dependencies,
+update_attempt_slot_index
                        )  # nutzt unsere Minimal-API
 
 def root_view(request):
@@ -76,9 +81,10 @@ urlpatterns = [
     path('api/orgarhythmus/delete_dependency/', delete_dependency),
 
     path('api/orgarhythmus/all_attempts/', all_attempts),
-
-
-
+    path('api/orgarhythmus/add_attempt_dependency/', add_attempt_dependency),
+    path('api/orgarhythmus/all_attempt_dependencies/', list_attempt_dependencies),
+    path('api/orgarhythmus/update_attempt_slot_index/', update_attempt_slot_index),
+    # path("api/orgarhythmus/update_attempt_slot_index/", update_attempt_slot_index),
 
 
 

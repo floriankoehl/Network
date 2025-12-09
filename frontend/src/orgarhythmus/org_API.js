@@ -244,6 +244,153 @@ export async function fetch_all_attempts(){
 
 
 
+// export async function add_attempt_dependecy(
+//   vortakt_attempt_id,
+//   nachtakt_attempt_id
+// ){
+//   const token = localStorage.getItem("access_token")
+
+//   if (!token) {
+//     throw redirect("/login")
+//   }
+
+//   const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempts/`, {
+//     headers: {
+//       "Authorization": `Bearer ${token}`
+//     },
+//     body: JSON.stringify({ vortakt_attempt_id, nachtakt_attempt_id })
+//   })
+
+//   if (!res.ok) {
+//     throw new Error("Failed to add dependency");
+//   }
+
+//   const data = await res.json();
+//   return data;
+
+
+// }
+
+export async function add_attempt_dependency(
+  vortakt_attempt_id,
+  nachtakt_attempt_id
+) {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    throw redirect("/login");
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/add_attempt_dependency/`, {
+    method: "POST",                     // 👈 important
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ vortakt_attempt_id, nachtakt_attempt_id }),
+  });
+
+  if (!res.ok) {
+    console.error("Backend failed:", res.status);
+    throw new Error("Failed to add dependency");
+  }
+
+  const data = await res.json();
+  return data;
+}
+
+
+
+
+
+
+export async function fetch_all_attempt_dependencies() {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    throw redirect("/login");
+  }
+
+  const res = await fetch(
+    `${BASE_URL}/api/orgarhythmus/all_attempt_dependencies/`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch attempt dependencies");
+  }
+
+  return await res.json();
+}
+
+
+
+
+
+
+// export async function update_attempt_slot_index(attempt_id, slot_index) {
+//   const token = localStorage.getItem("access_token");
+
+//   if (!token) {
+//     throw redirect("/login");
+//   }
+
+//   const res = await fetch(
+//     `${BASE_URL}/api/orgarhythmus/update_attempt_slot_index/`,
+//     {
+//       method: "POST",
+//       headers: {
+//         "Authorization": `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ attempt_id, slot_index }),
+//     }
+//   );
+
+//   if (!res.ok) {
+//     console.error("Backend failed:", res.status);
+//     throw new Error("Failed to update attempt slot_index");
+//   }
+
+//   return await res.json();
+// }
+
+
+
+
+export async function update_attempt_slot_index(attempt_id, slot_index) {
+  const token = localStorage.getItem("access_token");
+  if (!token) throw redirect("/login");
+
+  const res = await fetch(
+    `${BASE_URL}/api/orgarhythmus/update_attempt_slot_index/`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ attempt_id, slot_index }),
+    }
+  );
+
+  if (!res.ok) {
+    console.error("Backend failed:", res.status);
+    throw new Error("Failed to update attempt slot_index");
+  }
+
+  return await res.json();
+}
+
+
+
+
+
 
 
 

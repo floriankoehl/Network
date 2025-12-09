@@ -8,7 +8,10 @@ export default function OrgAttemptsWrapper() {
     return (
         <>
             <ReactFlowProvider>
-                <OrgAttempts/>
+                <div className="h-full bg-black/5">
+                    <OrgAttempts/>
+                </div>
+                
             </ReactFlowProvider>
         </>
     )
