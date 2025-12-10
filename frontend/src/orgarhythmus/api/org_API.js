@@ -1,6 +1,6 @@
-import { BASE_URL } from '../config/api';
+import { BASE_URL } from '../../config/api';
 import { redirect } from 'react-router-dom';
-import { authFetch } from '../auth'; // Pfad ggf. anpassen
+import { authFetch } from '../../auth'; // Pfad ggf. anpassen
 
 //_______________________________________________
 //_______________________________________________
@@ -8,64 +8,7 @@ import { authFetch } from '../auth'; // Pfad ggf. anpassen
 //_______________________________________________
 //_______________________________________________
 
-// fetch_all_tasks
-export async function fetch_all_tasks() {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhytmus/all_tasks/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    // Token invalid/expired or user not allowed
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    // Let React Router show the default error boundary or your custom one
-    throw new Error('Could not load tasks');
-  }
-
-  const data = await res.json();
-  // console.log("The fetched tasks from the API", data.tasks)
-  // const dummy = {"task1": "task1 data", "task2": "task2 data"}
-  return data.tasks;
-}
-
-// create_task
-export async function create_task(name, difficulty, priority, approval, team_id) {
-  const res = await fetch(`${BASE_URL}/api/orgarhytmus/create_task/`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: name,
-      difficulty: difficulty,
-      priority: priority,
-      approval: approval,
-      team_id: team_id || null,
-    }),
-  });
-
-  if (!res.ok) {
-    // ✅ Better error check
-    console.log('something went wrong');
-    throw new Error('Failed to create task');
-  }
-
-  const data = await res.json();
-  console.log('Successfully created');
-
-  return data; // ✅ Return the data
-}
-
+// (SHOULD BE USED BY TASKCARD)
 // delete_task
 export async function delete_task(id) {
   const res = await fetch(`${BASE_URL}/api/orgarhytmus/delete_task/`, {
@@ -94,6 +37,7 @@ export async function delete_task(id) {
 //_______________________________________________
 //_______________________________________________
 
+// (USED IN THIS FILE)
 // getCurrentProjectIdFromLocation (helper)
 function getCurrentProjectIdFromLocation() {
   // Beispiel-Pfad: /orgarhythmus/projects/1/attempts
@@ -110,6 +54,7 @@ function getCurrentProjectIdFromLocation() {
   return Number.isNaN(id) ? null : id;
 }
 
+// (ACTUALLY USED BY ATTEMPTS)
 // fetch_all_teams
 export async function fetch_all_teams() {
   const projectId = getCurrentProjectIdFromLocation();
@@ -129,92 +74,11 @@ export async function fetch_all_teams() {
 
 //_______________________________________________
 //_______________________________________________
-//________________DEPENDENCIES___________________
-//_______________________________________________
-//_______________________________________________
-
-// all_dependencies
-export async function all_dependencies() {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_dependencies/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    // Token invalid/expired or user not allowed
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    // Let React Router show the default error boundary or your custom one
-    throw new Error('Could not load dependencies');
-  }
-
-  const data = await res.json();
-  console.log('ALLL DEPENDCENCIES', data);
-  return data;
-}
-
-// add_dependency
-export async function add_dependency(vortakt_id, nachtakt_id) {
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/add_dependency/`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ vortakt_id, nachtakt_id }),
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to add dependency');
-  }
-
-  const data = await res.json();
-  return data;
-}
-
-// delete_dependency
-export async function delete_dependency(dep_id) {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/delete_dependency/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ dep_id }),
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    throw new Error('Could not delete dependency');
-  }
-
-  const data = await res.json();
-  return data; // ✅ Return the response
-}
-
-//_______________________________________________
-//_______________________________________________
 //__________________ATTEMPTS____________________
 //_______________________________________________
 //_______________________________________________
 
+// (ACTUALLY USED BY ATTEMPTS)
 // fetch_all_attempts
 export async function fetch_all_attempts() {
   const projectId = getCurrentProjectIdFromLocation();
@@ -244,6 +108,7 @@ export async function fetch_all_attempts() {
   return data.attempts;
 }
 
+// (ACTUALLY USED BY ATTEMPTS)
 // add_attempt_dependency
 export async function add_attempt_dependency(vortakt_attempt_id, nachtakt_attempt_id) {
   const token = localStorage.getItem('access_token');
@@ -270,6 +135,7 @@ export async function add_attempt_dependency(vortakt_attempt_id, nachtakt_attemp
   return data;
 }
 
+// (ACTUALLY USED BY ATTEMPTS)
 // fetch_all_attempt_dependencies
 export async function fetch_all_attempt_dependencies() {
   const token = localStorage.getItem('access_token');
@@ -292,6 +158,7 @@ export async function fetch_all_attempt_dependencies() {
   return await res.json();
 }
 
+// (ACTUALLY USED BY ATTEMPTS)
 // update_attempt_slot_index
 export async function update_attempt_slot_index(attempt_id, slot_index) {
   const token = localStorage.getItem('access_token');
@@ -314,6 +181,7 @@ export async function update_attempt_slot_index(attempt_id, slot_index) {
   return await res.json();
 }
 
+// (ACTUALLY USED BY ATTEMPTS)
 // delete_attempt_dependency
 export async function delete_attempt_dependency(dependency_id) {
   const token = localStorage.getItem('access_token');
@@ -345,6 +213,7 @@ export async function delete_attempt_dependency(dependency_id) {
 //_______________________________________________
 //_______________________________________________
 
+// (USED BY ORGA PROJECTS)
 // fetch_all_projects
 export async function fetch_all_projects() {
   const token = localStorage.getItem('access_token');
@@ -370,6 +239,7 @@ export async function fetch_all_projects() {
   return await res.json();
 }
 
+// (USED BY ORGA PROJECTS)
 // create_project_api
 export async function create_project_api(name, description) {
   const token = localStorage.getItem('access_token');
@@ -403,6 +273,7 @@ export async function create_project_api(name, description) {
   return await res.json();
 }
 
+// (USED BY ORGA PROJECT MAIN)
 // fetch_project_detail
 export async function fetch_project_detail(projectId) {
   const token = localStorage.getItem('access_token');
@@ -430,6 +301,7 @@ export async function fetch_project_detail(projectId) {
 
 // ___________Teams
 
+// (USED BY ORGA PROJECT TEAMS AND PROJECT TASKS)
 // fetchTeamsForProject
 export async function fetchTeamsForProject(projectId) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
@@ -443,6 +315,7 @@ export async function fetchTeamsForProject(projectId) {
   return await res.json();
 }
 
+// (USED BY ORGA PROJECT TEAMS)
 // createTeamForProject
 export async function createTeamForProject(projectId, payload) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
@@ -460,6 +333,7 @@ export async function createTeamForProject(projectId, payload) {
 
 // ___________Tasks
 
+// (USED BY PROJECT TASK)
 // fetchTasksForProject
 export async function fetchTasksForProject(projectId) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
@@ -475,6 +349,7 @@ export async function fetchTasksForProject(projectId) {
   return data.tasks || data;
 }
 
+// (USED BY PROJECTCreateTaskForm)
 // createTaskForProject
 export async function createTaskForProject(projectId, payload) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
@@ -490,6 +365,7 @@ export async function createTaskForProject(projectId, payload) {
   return await res.json();
 }
 
+// (USED BY Project Teams)
 // deleteTeamForProject
 export async function deleteTeamForProject(projectId, teamId) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`, {

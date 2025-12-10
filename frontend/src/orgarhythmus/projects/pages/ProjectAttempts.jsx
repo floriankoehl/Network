@@ -14,7 +14,7 @@ import {
     fetch_all_attempt_dependencies,
     update_attempt_slot_index,
     delete_attempt_dependency
-} from "../../org_API";
+} from "../../api/org_API";
 import snapSoundFile from "../../../assets/snap.mp3"
 
 

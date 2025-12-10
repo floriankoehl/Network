@@ -1,6 +1,6 @@
 // orgarhythmus/projects/components/OrgaProjects.jsx
 import { useEffect, useState } from "react";
-import { fetch_all_projects, create_project_api } from "../../org_API";
+import { fetch_all_projects, create_project_api } from "../api/org_API";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import { Plus, Folder, Calendar, User } from "lucide-react";

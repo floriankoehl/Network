@@ -6,7 +6,7 @@ import {
   fetchTeamsForProject,
   createTeamForProject,
   deleteTeamForProject,
-} from "../../org_API";
+} from "../../api/org_API";
 
 import {
   Users,
@@ -243,8 +243,8 @@ export default function ProjectTeams() {
               {loading
                 ? "Loading…"
                 : teams.length === 0
-                ? "No teams"
-                : `${teams.length} team${teams.length === 1 ? "" : "s"}`}
+                  ? "No teams"
+                  : `${teams.length} team${teams.length === 1 ? "" : "s"}`}
             </span>
           </div>
 

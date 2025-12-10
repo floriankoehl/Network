@@ -1,30 +1,19 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./layouts/MainLayout.jsx"
-import Home, { comment_loader } from "./pages/Home";
-import Register from "./pages/Register.jsx";
 import Network, { all_user_loader } from "./pages/Network.jsx";
-import Profile, { profile_loader } from "./pages/Profile.jsx";
-import Login from "./pages/Login.jsx"
-import Graph_3 from "./pages/Graph_2/Graph_3.jsx";
-import { Link } from "react-router-dom";
 import Landing from "./pages/Landing.jsx";
 import GraphWrapper from "./pages/Graph_Page/GraphWrapper.jsx"
 import Skills, { skills_loader_function } from "./pages/Skills/Skills.jsx";
 import SkillsWrapper from "./pages/Skills/SkillsWrapper.jsx";
 import CommentWall from "./pages/CommentWall.jsx";
 import OrgaLayout from "./orgarhythmus/org_layouts/OrgaLayout.jsx";
-import OrgaHome from "./orgarhythmus/org_pages/OrgaHome.jsx";
-import OrgaAllTeams from "./orgarhythmus/org_pages/OrgaAllTeams.jsx";
-import { fetch_all_teams } from "./orgarhythmus/org_API";
 import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import RegisterPage from "./pages/RegisterPage";
-import Dependencies from "./orgarhythmus/org_pages/Dependencies.jsx";
-import DependenciesWrapper from "./orgarhythmus/org_pages/DependenciesWrapper.jsx";
 import ProjectAttemptsWrapper from "./orgarhythmus/projects/pages/ProjectAttemptsWrapper.jsx";
 import ProjectLayout from "./orgarhythmus/org_layouts/ProjectLayout.jsx";
 import ProjectMain, { project_loader } from "./orgarhythmus/projects/pages/ProjectMain.jsx";
-import OrgaProjects from "./orgarhythmus/projects/components/OrgaProjects.jsx";
+import OrgaProjects from "./orgarhythmus/pages/OrgaProjects.jsx";
 import ProjectTeams from "./orgarhythmus/projects/pages/ProjectTeams.jsx"
 import ProjectTasks from "./orgarhythmus/projects/pages/ProjectTasks.jsx";
 

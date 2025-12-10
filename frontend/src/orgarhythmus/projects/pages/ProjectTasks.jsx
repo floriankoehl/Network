@@ -8,7 +8,7 @@ import { Plus } from "lucide-react";
 import {
   fetchTasksForProject,
   fetchTeamsForProject,
-} from "../../org_API";
+} from "../../api/org_API";
 import SMTaskCard from "../../org_components/TaskCardSM";
 import ProjectCreateTaskForm from "../components/ProjectCreateTaskForm";
 
@@ -21,15 +21,15 @@ function ProjectStats({ tasks, teams }) {
   const avgPriority =
     totalTasks > 0
       ? (
-          tasks.reduce((sum, t) => sum + (t.priority || 0), 0) / totalTasks
-        ).toFixed(1)
+        tasks.reduce((sum, t) => sum + (t.priority || 0), 0) / totalTasks
+      ).toFixed(1)
       : "-";
 
   const avgDifficulty =
     totalTasks > 0
       ? (
-          tasks.reduce((sum, t) => sum + (t.difficulty || 0), 0) / totalTasks
-        ).toFixed(1)
+        tasks.reduce((sum, t) => sum + (t.difficulty || 0), 0) / totalTasks
+      ).toFixed(1)
       : "-";
 
   return (
@@ -198,8 +198,8 @@ export default function ProjectTasks() {
               {loading
                 ? "Loading…"
                 : hasTasks
-                ? "Live project overview"
-                : "Nothing here yet"}
+                  ? "Live project overview"
+                  : "Nothing here yet"}
             </span>
           </div>
 

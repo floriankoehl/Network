@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "@mui/material/Button";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { delete_task } from "../org_API";
+import { delete_task } from "../api/org_API";
 
 export default function SMTaskCard({ task, onTaskDeleted }) {
   const [showVortakte, setShowVortakte] = useState(false);

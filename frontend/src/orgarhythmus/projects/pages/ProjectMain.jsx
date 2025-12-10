@@ -3,7 +3,7 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { Folder, Calendar, User, ArrowLeft } from "lucide-react";
 
 // loader function used in router
-import { fetch_project_detail } from "../../org_API";
+import { fetch_project_detail } from "../../api/org_API";
 
 export async function project_loader({ params }) {
   const { projectId } = params;
