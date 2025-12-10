@@ -54,7 +54,6 @@ const router = createBrowserRouter([
     path: "/orgarhythmus",
     element: <OrgaLayout />,
     children: [
-      // { path: "dependencies", element: <DependenciesWrapper /> },
       { index: true, element: <OrgaProjects /> },
       {
         path: "projects/:projectId/",
