@@ -1,3 +1,9 @@
+import { authFetch } from "../../auth";
+
+
+
+
+// getCurrentProjectIdFromLocation (helper)
 function getCurrentProjectIdFromLocation() {
   // Beispiel-Pfad: /orgarhythmus/projects/1/attempts
   const path = window.location.pathname; 
@@ -13,11 +19,7 @@ function getCurrentProjectIdFromLocation() {
   return Number.isNaN(id) ? null : id;
 }
 
-
-
-
-import { authFetch } from "../../auth";
-
+// fetch_all_attempts
 export async function fetch_all_attempts() {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {
@@ -44,11 +46,7 @@ console.log("ALL att inside the api_______ ", data.attempts)
   return data.attempts || [];
 }
 
-
-
-
-
-
+// add_attempt_dependency
 export async function add_attempt_dependency(vortakt_attempt_id, nachtakt_attempt_id) {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {
@@ -70,10 +68,7 @@ export async function add_attempt_dependency(vortakt_attempt_id, nachtakt_attemp
   return await res.json();
 }
 
-
-
-
-
+// fetch_all_attempt_dependencies
 export async function fetch_all_attempt_dependencies() {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {
@@ -92,10 +87,7 @@ export async function fetch_all_attempt_dependencies() {
   return await res.json();
 }
 
-
-
-
-
+// update_attempt_slot_index
 export async function update_attempt_slot_index(attempt_id, slot_index) {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {
@@ -117,10 +109,7 @@ export async function update_attempt_slot_index(attempt_id, slot_index) {
   return await res.json();
 }
 
-
-
-
-
+// delete_attempt_dependency
 export async function delete_attempt_dependency(dependency_id) {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {
@@ -142,11 +131,7 @@ export async function delete_attempt_dependency(dependency_id) {
   return await res.json();
 }
 
-
-
-
-
-
+// fetchTeamsForProject
 export async function fetchTeamsForProject() {
 
     const projectId = getCurrentProjectIdFromLocation();
@@ -161,31 +146,7 @@ export async function fetchTeamsForProject() {
   return await res.json();
 }
 
-// export async function createTeamForProject(payload) {
-//     const projectId = getCurrentProjectIdFromLocation();
- 
-//     const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
-//     method: "POST",
-//     body: JSON.stringify(payload),
-//     // Content-Type setzt authFetch automatisch
-//   });
-
-//   if (!res.ok) {
-//     throw new Error("Failed to create team");
-//   }
-
-//   return await res.json();
-// }
-
-
-
-
-
-
-
-// import { authFetch } from "../auth"; // hast du ja schon
-
-// 🔹 Nur die Teams dieses Projekts (für ProjectAttempts, etc.)
+// fetchTeamsForCurrentProject
 export async function fetchTeamsForCurrentProject() {
   const projectId = getCurrentProjectIdFromLocation();
   if (!projectId) {

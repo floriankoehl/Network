@@ -11,18 +11,23 @@ import ReactFlow, {
   Position
 } from "reactflow";
 import {
-  fetchTeamsForCurrentProject as fetch_all_teams, 
-  add_attempt_dependency,
+  add_dependency,
+  fetch_all_tasks,
+  all_dependencies,
+  delete_dependency,
   fetch_all_attempts,
-  fetch_all_attempt_dependencies as fetch_all_attempt_dependencies, 
-  update_attempt_slot_index,   
+  fetch_all_teams,
+  add_attempt_dependency,
+  fetch_all_attempt_dependencies,
+  update_attempt_slot_index,
   delete_attempt_dependency
-} from "../org_API_attempts_project";
+} from "../../org_API";
+
 import dagre from "@dagrejs/dagre";
 import Button from "@mui/material/Button";
 import { Plus, BarChart3, SlidersHorizontal, X } from "lucide-react";
-// import CreateTaskForm from "../org_components/CreateTaskForm";
-
+import CreateTaskForm from "../../org_components/CreateTaskForm";
+import SMTaskCard from "../../org_components/TaskCardSM";
 import { width } from "@mui/system";
 import snapSoundFile from "../../../assets/snap.mp3"
 
@@ -59,7 +64,7 @@ function playSnapSound() {
 }
 
 function get_overall_gap(num_tasks, gap, header_gap) {
-  return num_tasks * gap + header_gap -10;
+  return num_tasks * gap + header_gap - 10;
 }
 
 
@@ -138,10 +143,10 @@ const HEADER_BODY_GAP = 10;
 if (isMobile) {
   TASK_HEIGHT = 45;
   TASK_WIDTH = 45;
-   SIDEBAR_WIDTH = 70;
- TASK_SIDEBAR_WIDTH = 70;
-} 
-  
+  SIDEBAR_WIDTH = 70;
+  TASK_SIDEBAR_WIDTH = 70;
+}
+
 // const TEAM_WIDTH = COMPONENT_WIDTH;
 
 
@@ -303,17 +308,17 @@ function TaskNode({ data }) {
 
       {/* Right: pixel slots */}
       <div className="flex-1 h-full flex" style={{ pointerEvents: "none" }}>
-  {Object.entries(pixelMap).map(([index, range]) => (
-    <div
-      key={index}
-      style={{
-        width: range.end - range.beginn,
-        height: "100%",
-      }}
-      className="border border-black/10"
-    />
-  ))}
-</div>
+        {Object.entries(pixelMap).map(([index, range]) => (
+          <div
+            key={index}
+            style={{
+              width: range.end - range.beginn,
+              height: "100%",
+            }}
+            className="border border-black/10"
+          />
+        ))}
+      </div>
 
 
     </div>
@@ -339,7 +344,7 @@ function AttemptNode({ data, selected }) {
         shadow-sm flex justify-center items-center m-2 text-xs
         transition-all duration-150
         font-bold !text-[15px] text-black shadow-xl shadow-black/2
-        ${selected ? "border-sky-500 shadow-md scale-105 shadow-black/30"  : "border-slate-300"}
+        ${selected ? "border-sky-500 shadow-md scale-105 shadow-black/30" : "border-slate-300"}
       `}
       style={{
         width: TASK_WIDTH - 15,
@@ -364,7 +369,7 @@ function AttemptNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2 !h-2" 
+        className="!w-2 !h-2"
         style={{
           right: -2,
           top: "50%",
@@ -383,7 +388,7 @@ const nodeTypes = {
   teamNode: TeamNode,
   taskNode: TaskNode,
   attemptNode: AttemptNode,
-  taskHeaderNode: TaskHeaderNode, 
+  taskHeaderNode: TaskHeaderNode,
 };
 
 const headerNode = {
@@ -411,7 +416,7 @@ export default function OrgAttempts() {
 
   const [edges, setEdges] = useState([]);
   const [selectedDepId, setSelectedDepId] = useState(null);
-const [selectedEdgeId, setSelectedEdgeId] = useState(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
 
 
@@ -465,7 +470,7 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
 
         setGroupNodes(updated_group_nodes);
-        
+
 
         //RENDER TASK NODES
         const updated_task_nodes = all_teams.flatMap((team) => {
@@ -492,8 +497,8 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
         setTaskNodes(updated_task_nodes);
 
-        setOverAllGap(get_overall_gap(num_teams,TEAM_GAP_PADDING_Y, HEADER_BODY_GAP ))
-        setY_reactflow_size(currentY + get_overall_gap(num_teams,TEAM_GAP_PADDING_Y, HEADER_BODY_GAP));
+        setOverAllGap(get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP))
+        setY_reactflow_size(currentY + get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP));
       }
       //END HERE
 
@@ -530,28 +535,28 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
       //   setNodes(updated_nodes)
       // };
 
-    async function loadAttempts() {
-  const all_attempts = await fetch_all_attempts();
-  setAll_Attempts(all_attempts);
+      async function loadAttempts() {
+        const all_attempts = await fetch_all_attempts();
+        setAll_Attempts(all_attempts);
 
-  const updated_nodes = all_attempts.map((attempt, index) => {
-    const x = getXFromSlotIndex(attempt.slot_index);  // 👈 use DB value, default inside helper
+        const updated_nodes = all_attempts.map((attempt, index) => {
+          const x = getXFromSlotIndex(attempt.slot_index);  // 👈 use DB value, default inside helper
 
-    return {
-      id: `attempt-${attempt.id}`,
-      parentNode: `task-${attempt.task.id}`,
-      extent: "parent",
-      type: "attemptNode",
-      position: { x, y: index * 0 },   // y stays as before
-      data: {
-        label: attempt.name,
-        number: attempt.number,
-      },
-    };
-  });
+          return {
+            id: `attempt-${attempt.id}`,
+            parentNode: `task-${attempt.task.id}`,
+            extent: "parent",
+            type: "attemptNode",
+            position: { x, y: index * 0 },   // y stays as before
+            data: {
+              label: attempt.name,
+              number: attempt.number,
+            },
+          };
+        });
 
-  setNodes(updated_nodes);
-}
+        setNodes(updated_nodes);
+      }
 
 
 
@@ -560,22 +565,22 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
       //   setAll_Tasks(all_tasks)
       // }
 
-       // 🔥 NEW: load all existing attempt dependencies and turn them into edges
-    async function loadAttemptDependencies() {
-      const deps = await fetch_all_attempt_dependencies();
+      // 🔥 NEW: load all existing attempt dependencies and turn them into edges
+      async function loadAttemptDependencies() {
+        const deps = await fetch_all_attempt_dependencies();
 
-      const initialEdges = deps.map((dep) => ({
-        id: `attemptdep-${dep.id}`,
-        source: `attempt-${dep.vortakt_attempt_id}`,
-        target: `attempt-${dep.nachtakt_attempt_id}`,
-        type: "default",
-        animated: true,
-        interactionWidth: 20,
-        style: { strokeWidth: 2 },
-      }));
+        const initialEdges = deps.map((dep) => ({
+          id: `attemptdep-${dep.id}`,
+          source: `attempt-${dep.vortakt_attempt_id}`,
+          target: `attempt-${dep.nachtakt_attempt_id}`,
+          type: "default",
+          animated: true,
+          interactionWidth: 20,
+          style: { strokeWidth: 2 },
+        }));
 
-      setEdges(initialEdges);
-    }
+        setEdges(initialEdges);
+      }
 
 
 
@@ -599,18 +604,18 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
 
 
- useEffect(() => {
-  setMergedNodes([
-    headerNode,
-    ...groupNodes,
-    ...taskNodes,
-    ...nodes, // attempts
-    
-    
-    
-    
-  ]);
-}, [groupNodes, taskNodes, nodes]);
+  useEffect(() => {
+    setMergedNodes([
+      headerNode,
+      ...groupNodes,
+      ...taskNodes,
+      ...nodes, // attempts
+
+
+
+
+    ]);
+  }, [groupNodes, taskNodes, nodes]);
 
 
 
@@ -623,263 +628,263 @@ const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
 
 
-// const onNodeDragStop = useCallback((event, node) => {
-//   if (node.type !== "attemptNode") return;
+  // const onNodeDragStop = useCallback((event, node) => {
+  //   if (node.type !== "attemptNode") return;
 
-//   setMergedNodes((nds) =>
-//     nds.map((n) => {
-//       if (n.id !== node.id) return n;
+  //   setMergedNodes((nds) =>
+  //     nds.map((n) => {
+  //       if (n.id !== node.id) return n;
 
-//       const snappedX = snapAttemptX(node.position.x);
-//       const didSnap = snappedX !== node.position.x;
+  //       const snappedX = snapAttemptX(node.position.x);
+  //       const didSnap = snappedX !== node.position.x;
 
-//       if (didSnap) {
-//         playSnapSound();
-//       }
+  //       if (didSnap) {
+  //         playSnapSound();
+  //       }
 
-//       return {
-//         ...n,
-//         position: {
-//           ...n.position,
-//           x: snappedX,
-//         },
-//         data: {
-//           ...n.data,
-//           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
-//         },
-//       };
-//     })
-//   );
-// }, []);
+  //       return {
+  //         ...n,
+  //         position: {
+  //           ...n.position,
+  //           x: snappedX,
+  //         },
+  //         data: {
+  //           ...n.data,
+  //           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
+  //         },
+  //       };
+  //     })
+  //   );
+  // }, []);
 
-// const onNodeDragStop = useCallback((event, node) => {
-//   if (node.type !== "attemptNode") return;
+  // const onNodeDragStop = useCallback((event, node) => {
+  //   if (node.type !== "attemptNode") return;
 
-//   // 1) Compute slot_index from current x
-//   const slotIndex = getSlotIndexFromX(node.position.x);
-//   const snappedX = getXFromSlotIndex(slotIndex);
-//   const didSnap = snappedX !== node.position.x;
+  //   // 1) Compute slot_index from current x
+  //   const slotIndex = getSlotIndexFromX(node.position.x);
+  //   const snappedX = getXFromSlotIndex(slotIndex);
+  //   const didSnap = snappedX !== node.position.x;
 
-//   // 2) Update local ReactFlow state
-//   setMergedNodes((nds) =>
-//     nds.map((n) => {
-//       if (n.id !== node.id) return n;
+  //   // 2) Update local ReactFlow state
+  //   setMergedNodes((nds) =>
+  //     nds.map((n) => {
+  //       if (n.id !== node.id) return n;
 
-//       if (didSnap) {
-//         playSnapSound();
-//       }
+  //       if (didSnap) {
+  //         playSnapSound();
+  //       }
 
-//       return {
-//         ...n,
-//         position: {
-//           ...n.position,
-//           x: snappedX,
-//         },
-//         data: {
-//           ...n.data,
-//           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
-//           slot_index: slotIndex,    // optional: keep locally as well
-//         },
-//       };
-//     })
-//   );
+  //       return {
+  //         ...n,
+  //         position: {
+  //           ...n.position,
+  //           x: snappedX,
+  //         },
+  //         data: {
+  //           ...n.data,
+  //           justSnapped: didSnap ? Date.now() : n.data.justSnapped,
+  //           slot_index: slotIndex,    // optional: keep locally as well
+  //         },
+  //       };
+  //     })
+  //   );
 
-//   // 3) Persist to backend
-//   const attemptId = extractAttemptId(node.id);   // "attempt-19" → 19
+  //   // 3) Persist to backend
+  //   const attemptId = extractAttemptId(node.id);   // "attempt-19" → 19
 
-//   if (!attemptId) {
-//     console.error("Could not parse attemptId from node.id:", node.id);
-//     return;
-//   }
+  //   if (!attemptId) {
+  //     console.error("Could not parse attemptId from node.id:", node.id);
+  //     return;
+  //   }
 
-//   (async () => {
-//     try {
-//       const res = await update_attempt_slot_index(attemptId, slotIndex);
-//       console.log("Slot index updated:", res);
-//     } catch (err) {
-//       console.error("Failed to update slot index:", err);
-//       // optional: show toast, revert position, etc.
-//     }
-//   })();
-// }, [setMergedNodes]);
+  //   (async () => {
+  //     try {
+  //       const res = await update_attempt_slot_index(attemptId, slotIndex);
+  //       console.log("Slot index updated:", res);
+  //     } catch (err) {
+  //       console.error("Failed to update slot index:", err);
+  //       // optional: show toast, revert position, etc.
+  //     }
+  //   })();
+  // }, [setMergedNodes]);
 
-const onNodeDragStop = useCallback((event, node) => {
-  if (node.type !== "attemptNode") return;
+  const onNodeDragStop = useCallback((event, node) => {
+    if (node.type !== "attemptNode") return;
 
-  const slotIndex = getSlotIndexFromX(node.position.x);
-  const snappedX = getXFromSlotIndex(slotIndex);
+    const slotIndex = getSlotIndexFromX(node.position.x);
+    const snappedX = getXFromSlotIndex(slotIndex);
 
-  setMergedNodes((nds) =>
-    nds.map((n) =>
-      n.id === node.id
-        ? {
+    setMergedNodes((nds) =>
+      nds.map((n) =>
+        n.id === node.id
+          ? {
             ...n,
             position: { ...n.position, x: snappedX },
           }
-        : n
-    )
-  );
+          : n
+      )
+    );
 
-  const attemptId = extractAttemptId(node.id); // "attempt-19" -> 19
-  if (!attemptId) return;
+    const attemptId = extractAttemptId(node.id); // "attempt-19" -> 19
+    if (!attemptId) return;
 
-  (async () => {
-    try {
-      const res = await update_attempt_slot_index(attemptId, slotIndex);
-      console.log("Slot index saved:", res);
-    } catch (err) {
-      console.error("Failed to save slot index:", err);
-    }
-  })();
-}, [setMergedNodes]);
+    (async () => {
+      try {
+        const res = await update_attempt_slot_index(attemptId, slotIndex);
+        console.log("Slot index saved:", res);
+      } catch (err) {
+        console.error("Failed to save slot index:", err);
+      }
+    })();
+  }, [setMergedNodes]);
 
 
 
   const onEdgesChange = useCallback((changes) => {
-  setEdges((eds) => applyEdgeChanges(changes, eds));
-}, []);
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  }, []);
 
-// const onConnect = useCallback((connection) => {
-//   console.log("onConnect fired:", connection);
+  // const onConnect = useCallback((connection) => {
+  //   console.log("onConnect fired:", connection);
 
-//   setEdges((eds) => {
-//     const newEdges = addEdge(
-//       {
-//         ...connection,
-//         type: "default",     // 👈 curved edge, less hidden behind nodes
-//         animated: true,
-//         interactionWidth: 20,   // 👈 big click area around the line
-//         style: { strokeWidth: 2 },
-//       },
-//       eds
-//     );
-//     console.log("edges now:", newEdges);
-//     return newEdges;
-//   });
-// }, []);
+  //   setEdges((eds) => {
+  //     const newEdges = addEdge(
+  //       {
+  //         ...connection,
+  //         type: "default",     // 👈 curved edge, less hidden behind nodes
+  //         animated: true,
+  //         interactionWidth: 20,   // 👈 big click area around the line
+  //         style: { strokeWidth: 2 },
+  //       },
+  //       eds
+  //     );
+  //     console.log("edges now:", newEdges);
+  //     return newEdges;
+  //   });
+  // }, []);
 
-// const onConnect = useCallback((connection) => {
-//   console.log("onConnect fired:", connection);
+  // const onConnect = useCallback((connection) => {
+  //   console.log("onConnect fired:", connection);
 
-//   // 1) Call backend – connection.source/target = node IDs
-//   (async () => {
-//     try {
-//       const res = await add_attempt_dependency(
-//         connection.source,   // vortakt_attempt_id
-//         connection.target    // nachtakt_attempt_id
-//       );
-//       console.log("Dependency created:", res);
+  //   // 1) Call backend – connection.source/target = node IDs
+  //   (async () => {
+  //     try {
+  //       const res = await add_attempt_dependency(
+  //         connection.source,   // vortakt_attempt_id
+  //         connection.target    // nachtakt_attempt_id
+  //       );
+  //       console.log("Dependency created:", res);
 
-//       // 2) If backend ok → update edges in frontend
-//       setEdges((eds) =>
-//         addEdge(
-//           {
-//             ...connection,
-//             type: "default",
-//             animated: true,
-//             interactionWidth: 20,
-//             style: { strokeWidth: 2 },
-//           },
-//           eds
-//         )
-//       );
-//     } catch (err) {
-//       console.error("Failed to create attempt dependency:", err);
-//       // Optional: show toast or revert UI
-//     }
-//   })();
-// }, [setEdges]);
+  //       // 2) If backend ok → update edges in frontend
+  //       setEdges((eds) =>
+  //         addEdge(
+  //           {
+  //             ...connection,
+  //             type: "default",
+  //             animated: true,
+  //             interactionWidth: 20,
+  //             style: { strokeWidth: 2 },
+  //           },
+  //           eds
+  //         )
+  //       );
+  //     } catch (err) {
+  //       console.error("Failed to create attempt dependency:", err);
+  //       // Optional: show toast or revert UI
+  //     }
+  //   })();
+  // }, [setEdges]);
 
-// const onConnect = useCallback((connection) => {
-//   console.log("onConnect fired:", connection);
+  // const onConnect = useCallback((connection) => {
+  //   console.log("onConnect fired:", connection);
 
-//   const vortaktId = extractAttemptId(connection.source);
-//   const nachtaktId = extractAttemptId(connection.target);
+  //   const vortaktId = extractAttemptId(connection.source);
+  //   const nachtaktId = extractAttemptId(connection.target);
 
-//   if (!vortaktId || !nachtaktId) {
-//     console.error("Could not parse attempt IDs from nodes:", connection);
-//     return;
-//   }
+  //   if (!vortaktId || !nachtaktId) {
+  //     console.error("Could not parse attempt IDs from nodes:", connection);
+  //     return;
+  //   }
 
-//   (async () => {
-//     try {
-//       const res = await add_attempt_dependency(vortaktId, nachtaktId);
-//       console.log("Dependency created:", res);
+  //   (async () => {
+  //     try {
+  //       const res = await add_attempt_dependency(vortaktId, nachtaktId);
+  //       console.log("Dependency created:", res);
 
-//       setEdges((eds) =>
-//         addEdge(
-//           {
-//             ...connection,
-//             type: "default",
-//             animated: true,
-//             interactionWidth: 20,
-//             style: { strokeWidth: 2 },
-//           },
-//           eds
-//         )
-//       );
-//     } catch (err) {
-//       console.error("Failed to create attempt dependency:", err);
-//     }
-//   })();
-// }, [setEdges]);
+  //       setEdges((eds) =>
+  //         addEdge(
+  //           {
+  //             ...connection,
+  //             type: "default",
+  //             animated: true,
+  //             interactionWidth: 20,
+  //             style: { strokeWidth: 2 },
+  //           },
+  //           eds
+  //         )
+  //       );
+  //     } catch (err) {
+  //       console.error("Failed to create attempt dependency:", err);
+  //     }
+  //   })();
+  // }, [setEdges]);
 
-const onConnect = useCallback((connection) => {
-  console.log("onConnect fired:", connection);
+  const onConnect = useCallback((connection) => {
+    console.log("onConnect fired:", connection);
 
-  const vortaktId = extractAttemptId(connection.source);
-  const nachtaktId = extractAttemptId(connection.target);
+    const vortaktId = extractAttemptId(connection.source);
+    const nachtaktId = extractAttemptId(connection.target);
 
-  if (!vortaktId || !nachtaktId) {
-    console.error("Could not parse attempt IDs from nodes:", connection);
-    return;
-  }
-
-  (async () => {
-    try {
-      const res = await add_attempt_dependency(vortaktId, nachtaktId);
-      console.log("Dependency created:", res);
-
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...connection,
-            id: `attemptdep-${res.id}`,   // 👈 now we know which DB row this is
-            type: "default",
-            animated: true,
-            interactionWidth: 20,
-            style: { strokeWidth: 2 },
-          },
-          eds
-        )
-      );
-    } catch (err) {
-      console.error("Failed to create attempt dependency:", err);
+    if (!vortaktId || !nachtaktId) {
+      console.error("Could not parse attempt IDs from nodes:", connection);
+      return;
     }
-  })();
-}, [setEdges]);
+
+    (async () => {
+      try {
+        const res = await add_attempt_dependency(vortaktId, nachtaktId);
+        console.log("Dependency created:", res);
+
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...connection,
+              id: `attemptdep-${res.id}`,   // 👈 now we know which DB row this is
+              type: "default",
+              animated: true,
+              interactionWidth: 20,
+              style: { strokeWidth: 2 },
+            },
+            eds
+          )
+        );
+      } catch (err) {
+        console.error("Failed to create attempt dependency:", err);
+      }
+    })();
+  }, [setEdges]);
 
 
-async function handleDeleteSelectedDependency() {
-  if (!selectedDepId || !selectedEdgeId) return;
+  async function handleDeleteSelectedDependency() {
+    if (!selectedDepId || !selectedEdgeId) return;
 
-  try {
-    const res = await delete_attempt_dependency(selectedDepId);
-    console.log("Dependency deleted:", res);
+    try {
+      const res = await delete_attempt_dependency(selectedDepId);
+      console.log("Dependency deleted:", res);
 
-    // Remove edge from ReactFlow
-    setEdges((eds) => eds.filter((e) => e.id !== selectedEdgeId));
+      // Remove edge from ReactFlow
+      setEdges((eds) => eds.filter((e) => e.id !== selectedEdgeId));
 
-    setSelectedDepId(null);
-    setSelectedEdgeId(null);
-  } catch (err) {
-    console.error("Failed to delete dependency:", err);
+      setSelectedDepId(null);
+      setSelectedEdgeId(null);
+    } catch (err) {
+      console.error("Failed to delete dependency:", err);
+    }
   }
-}
 
 
 
-//
+  //
 
   return (
     <>
@@ -888,68 +893,68 @@ async function handleDeleteSelectedDependency() {
         className="w-screen !h-screen
              flex justify-center items-center 
              lg:max-w-full  lg:px-10 md:max-w-[700px] sm:max-w-full p-3
-                 
+            
              "
       >
         {selectedDepId && (
-  <div className="absolute top-15 left-0 w-full flex justify-center mt-4">
-    <button
-      onClick={handleDeleteSelectedDependency}
-      className="
-          
+          <div className="absolute top-15 left-0 w-full flex justify-center mt-4">
+            <button
+              onClick={handleDeleteSelectedDependency}
+              className="
+        
         px-4 py-2 rounded-md 
         bg-red-500 text-white 
         text-sm font-medium 
         hover:bg-red-600 
         shadow-sm
       "
-    >
-      Delete selected dependency
-    </button>
- </div>
-)}
+            >
+              Delete selected dependency
+            </button>
+          </div>
+        )}
         <div style={{ width: COMPONENT_WIDTH, height: y_reactflow_size }} className="
         shadow-xl shadow-black/30 rounded-xl max-h-[75vh] ">
           <ReactFlow
-  nodes={mergedNodes}
-  edges={edges}
-  nodeTypes={nodeTypes}
-  onNodesChange={onNodesChange}
-  onEdgesChange={onEdgesChange}
-  onConnect={onConnect}
-  onNodeDragStop={onNodeDragStop}
-  elementsSelectable={true}               // (default, but nice to be explicit)
-  deleteKeyCode={["Delete", "Backspace"]}
-  
-  onEdgeClick={(evt, edge) => {
-    console.log("EDGE CLICKED:", edge);
-    if (edge.id?.startsWith("attemptdep-")) {
-      const depId = parseInt(edge.id.replace("attemptdep-", ""), 10);
-      if (!Number.isNaN(depId)) {
-        setSelectedDepId(depId);
-        setSelectedEdgeId(edge.id);
-      }
-    } else {
-      setSelectedDepId(null);
-      setSelectedEdgeId(null);
-    }
-  }}
-  // allow deleting selected edges/nodes
-  // maxZoom={1.2}
-  minZoom={1}
-    // onNodeClick={(evt, node) => console.log("NODE CLICKED:", node)}
-  // onEdgeClick={(evt, edge) => console.log("EDGE CLICKED:", edge)}
+            nodes={mergedNodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeDragStop={onNodeDragStop}
+            elementsSelectable={true}               // (default, but nice to be explicit)
+            deleteKeyCode={["Delete", "Backspace"]}
 
-  translateExtent={[
-    [0, 0],
-    [COMPONENT_WIDTH + 100, y_reactflow_size],
-  ]}
->
+            onEdgeClick={(evt, edge) => {
+              console.log("EDGE CLICKED:", edge);
+              if (edge.id?.startsWith("attemptdep-")) {
+                const depId = parseInt(edge.id.replace("attemptdep-", ""), 10);
+                if (!Number.isNaN(depId)) {
+                  setSelectedDepId(depId);
+                  setSelectedEdgeId(edge.id);
+                }
+              } else {
+                setSelectedDepId(null);
+                setSelectedEdgeId(null);
+              }
+            }}
+            // allow deleting selected edges/nodes
+            // maxZoom={1.2}
+            minZoom={1}
+            // onNodeClick={(evt, node) => console.log("NODE CLICKED:", node)}
+            // onEdgeClick={(evt, edge) => console.log("EDGE CLICKED:", edge)}
+
+            translateExtent={[
+              [0, 0],
+              [COMPONENT_WIDTH + 100, y_reactflow_size],
+            ]}
+          >
 
 
-        </ReactFlow>
+          </ReactFlow>
         </div>
-        
+
 
       </div>
 

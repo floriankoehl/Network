@@ -1,7 +1,7 @@
 
 
 import { ReactFlowProvider } from "reactflow";
-import OrgAttempts from "./OrgAttempts";
+import ProjectAttempts from "./ProjectAttempts";
 
 
 export default function OrgAttemptsWrapper() {
@@ -9,9 +9,9 @@ export default function OrgAttemptsWrapper() {
         <>
             <ReactFlowProvider>
                 <div className="h-full bg-black/5">
-                    <OrgAttempts/>
+                    <ProjectAttempts />
                 </div>
-                
+
             </ReactFlowProvider>
         </>
     )

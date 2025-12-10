@@ -1,39 +1,19 @@
-// Header.jsx
-// A responsive, collapsible (burger) navigation header
-// - Uses TailwindCSS for layout & styling
-// - Uses react-router NavLink for routing
-// - Uses MUI icons for the menu items
-
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-
-// MUI Icons
-import HomeIcon from "@mui/icons-material/Home";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import LoginIcon from "@mui/icons-material/Login";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
-import WbIridescentIcon from "@mui/icons-material/WbIridescent";
-import FlightLandIcon from "@mui/icons-material/FlightLand";
-import { Brain } from 'lucide-react';
-import Diversity3Icon from '@mui/icons-material/Diversity3';
-import ListIcon from '@mui/icons-material/List';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
-
 import { useAuth } from "../../auth/AuthContext";
-import ChatIcon from '@mui/icons-material/Chat';
-import { ListOrdered } from 'lucide-react';
 import ReplayIcon from '@mui/icons-material/Replay';
-import NumbersIcon from '@mui/icons-material/Numbers';
-import { FolderOpenDot, Folder } from 'lucide-react';
+import { Folder } from 'lucide-react';
+
 
 export default function OrgaHeader() {
-  // Controls whether the mobile menu is open or closed
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAuthenticated, loadingUser, logout } = useAuth();
 
 
-  // Central definition of your nav items, so it's easy to change later
   const navItems = [
     // { to: "/orgarhythmus", label: "Tasks", icon: <ListIcon fontSize="small" />, end: true },
     // { to: "/orgarhythmus/all_teams", label: "Teams", icon: <Diversity3Icon fontSize="small" /> },
@@ -41,12 +21,10 @@ export default function OrgaHeader() {
     // { to: "/orgarhythmus/attempts", label: "Attempts", icon: <NumbersIcon fontSize="small" /> },
     { to: "/orgarhythmus", label: "Projects", icon: <Folder size={18} /> },
     { to: "/landing", label: "Go back", icon: <ReplayIcon fontSize="small" /> },
-    
-    
+
+
   ];
 
-
-  // Helper function to generate Tailwind classes depending on active state
   const linkBaseClasses =
     "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200";
   const getLinkClasses = (isActive) =>
@@ -56,6 +34,7 @@ export default function OrgaHeader() {
         ? "bg-cyan-500/90 text-slate-900 shadow-lg scale-105"
         : "bg-slate-800/70 text-slate-200 hover:bg-slate-700 hover:text-white hover:scale-105",
     ].join(" ");
+
 
 
   return (
@@ -70,7 +49,7 @@ export default function OrgaHeader() {
         >
           {/* Tiny "logo dot" */}
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 shadow-md">
-            <PlayCircleIcon/>
+            <PlayCircleIcon />
           </span>
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-300">
@@ -89,7 +68,7 @@ export default function OrgaHeader() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}  
+              end={item.end}
               className={({ isActive }) => getLinkClasses(isActive)}
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60">
@@ -151,7 +130,7 @@ export default function OrgaHeader() {
                 onClick={() => logout()}
                 className="
       flex items-center gap-2 rounded-full px-3 p-1 text-sm font-medium transition-all duration-200
-      bg-slate-800/70 text-slate-200 hover:bg-slate-700 hover:text-white hover:scale-105"
+                            bg-slate-800/70 text-slate-200 hover:bg-slate-700 hover:text-white hover:scale-105"
               >
                 <span className="flex p-2 h-8 w-8 items-center justify-center rounded-full bg-slate-800/70 text-white">
                   <LogoutIcon />
@@ -163,27 +142,6 @@ export default function OrgaHeader() {
           )}
 
         </nav>
-
-
-        {/* {!loadingUser && isAuthenticated && (
-
-            <NavLink key={user.username}
-              to={"/profile"}
-             
-            >
-
-              <div className="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all">
-                <div className="flex items-center gap-3 ">
-                  <span className="flex p-2 h-8 w-8 items-center justify-center rounded-full bg-slate-800/70 text-white">
-                    <AccountCircleIcon />
-                  </span>
-                  <span className="font-semibold text-cyan-300">{user.username}</span>
-                </div>
-              </div>
-            </NavLink>
-          )} */}
-
-
 
 
         {/* RIGHT: Mobile Burger Button (shown only on small screens) */}
@@ -248,7 +206,8 @@ export default function OrgaHeader() {
                   className={({ isActive }) => getLinkClasses(isActive)}
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60">
+                  <span className="flex h-6 w-6 items-center 
+                  justify-center rounded-full bg-slate-900/60">
                     <VpnKeyIcon fontSize="small" />
                   </span>
                   <span>Register</span>
@@ -260,8 +219,8 @@ export default function OrgaHeader() {
           )}
 
 
-      
-     
+
+
 
 
 
@@ -295,9 +254,9 @@ export default function OrgaHeader() {
      hover:text-white hover:scale-105"
               >Logout
                 <span className="flex p-2 h-8 w-8 items-center justify-center rounded-full bg-slate-800/70 text-white">
-                  <LogoutIcon className="!text-[15px]"/>
+                  <LogoutIcon className="!text-[15px]" />
                 </span>
-                
+
               </button>
             </div>
           )}
@@ -309,7 +268,7 @@ export default function OrgaHeader() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}  
+              end={item.end}
               // For mobile: full-width "pills"
               className={({ isActive }) =>
                 [

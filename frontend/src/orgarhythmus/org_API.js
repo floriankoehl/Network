@@ -1,9 +1,6 @@
-import { BASE_URL } from "../config/api"
-import { redirect } from "react-router-dom";
-
-
-
-
+import { BASE_URL } from '../config/api';
+import { redirect } from 'react-router-dom';
+import { authFetch } from '../auth'; // Pfad ggf. anpassen
 
 //_______________________________________________
 //_______________________________________________
@@ -11,92 +8,85 @@ import { redirect } from "react-router-dom";
 //_______________________________________________
 //_______________________________________________
 
-
+// fetch_all_tasks
 export async function fetch_all_tasks() {
-    const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
-    if (!token) {
-    throw redirect("/login");
+  if (!token) {
+    throw redirect('/login');
   }
 
-    const res = await fetch(`${BASE_URL}/api/orgarhytmus/all_tasks/`, {
+  const res = await fetch(`${BASE_URL}/api/orgarhytmus/all_tasks/`, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
-    if (res.status === 401 || res.status === 403) {
+  if (res.status === 401 || res.status === 403) {
     // Token invalid/expired or user not allowed
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
-    if (!res.ok) {
+  if (!res.ok) {
     // Let React Router show the default error boundary or your custom one
-    throw new Error("Could not load tasks");
+    throw new Error('Could not load tasks');
   }
 
-    const data = await res.json();
-    // console.log("The fetched tasks from the API", data.tasks)
-    // const dummy = {"task1": "task1 data", "task2": "task2 data"}
-    return data.tasks
+  const data = await res.json();
+  // console.log("The fetched tasks from the API", data.tasks)
+  // const dummy = {"task1": "task1 data", "task2": "task2 data"}
+  return data.tasks;
 }
 
+// create_task
 export async function create_task(name, difficulty, priority, approval, team_id) {
-    const res = await fetch(`${BASE_URL}/api/orgarhytmus/create_task/`, {
-        method: "POST",
-        headers: {
-            "content-type": "application/json"
-        },
-        body: JSON.stringify({
-            name: name,
-            difficulty: difficulty,
-            priority: priority,
-            approval: approval,
-            team_id: team_id || null,
-        }),
-    })
+  const res = await fetch(`${BASE_URL}/api/orgarhytmus/create_task/`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      name: name,
+      difficulty: difficulty,
+      priority: priority,
+      approval: approval,
+      team_id: team_id || null,
+    }),
+  });
 
-    if (!res.ok) {  // ✅ Better error check
-        console.log("something went wrong");
-        throw new Error("Failed to create task");
-    }
+  if (!res.ok) {
+    // ✅ Better error check
+    console.log('something went wrong');
+    throw new Error('Failed to create task');
+  }
 
-    const data = await res.json();
-    console.log("Successfully created");
-    
-    return data;  // ✅ Return the data
+  const data = await res.json();
+  console.log('Successfully created');
+
+  return data; // ✅ Return the data
 }
 
+// delete_task
 export async function delete_task(id) {
-        const res = await fetch(`${BASE_URL}/api/orgarhytmus/delete_task/`, {
-            method: "POST",
-            headers: {
-                "content-type": "application/json"
-            },
-            body: JSON.stringify({ id }),
-        })
+  const res = await fetch(`${BASE_URL}/api/orgarhytmus/delete_task/`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ id }),
+  });
 
-        if (!res.ok) {
-            console.log("Some Error")
-            return
-        }
+  if (!res.ok) {
+    console.log('Some Error');
+    return;
+  }
 
-        const data = await res.json();
-        // setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-        console.log(data)
+  const data = await res.json();
+  // setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+  console.log(data);
 
-        return data
-    }
-
-
-
-
-
-
-
-
-
-
+  return data;
+}
 
 //_______________________________________________
 //_______________________________________________
@@ -104,30 +94,14 @@ export async function delete_task(id) {
 //_______________________________________________
 //_______________________________________________
 
-//ALL TEAMS
-// export async function fetch_all_teams() {
-//     const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_teams/`)
-
-//     if (!res.ok) {
-//         console.log("Something went wrong calling teams in api.js")
-//         return
-//     }
-
-//     const data = await res.json()
-
-//     // console.log("The fetched teams from api: ", data)
-//     return data.teams
-
-// }
-
-
+// getCurrentProjectIdFromLocation (helper)
 function getCurrentProjectIdFromLocation() {
   // Beispiel-Pfad: /orgarhythmus/projects/1/attempts
-  const path = window.location.pathname; 
-  const parts = path.split("/").filter(Boolean); 
+  const path = window.location.pathname;
+  const parts = path.split('/').filter(Boolean);
   // ["orgarhythmus", "projects", "1", "attempts"]
 
-  const projectsIndex = parts.indexOf("projects");
+  const projectsIndex = parts.indexOf('projects');
   if (projectsIndex === -1 || projectsIndex + 1 >= parts.length) {
     return null;
   }
@@ -136,18 +110,16 @@ function getCurrentProjectIdFromLocation() {
   return Number.isNaN(id) ? null : id;
 }
 
-
-
-
+// fetch_all_teams
 export async function fetch_all_teams() {
   const projectId = getCurrentProjectIdFromLocation();
 
   const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_teams_for_this_project/`
+    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_teams_for_this_project/`,
   );
 
   if (!res.ok) {
-    console.log("Something went wrong calling teams in api.js");
+    console.log('Something went wrong calling teams in api.js');
     return;
   }
 
@@ -155,400 +127,262 @@ export async function fetch_all_teams() {
   return data.teams;
 }
 
-
-
-
-
-
-
-
 //_______________________________________________
 //_______________________________________________
 //________________DEPENDENCIES___________________
 //_______________________________________________
 //_______________________________________________
 
+// all_dependencies
+export async function all_dependencies() {
+  const token = localStorage.getItem('access_token');
 
-export async function all_dependencies(){
-    const token = localStorage.getItem("access_token");
-
-    if (!token) {
-    throw redirect("/login");
+  if (!token) {
+    throw redirect('/login');
   }
 
-    const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_dependencies/`, {
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_dependencies/`, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
-    if (res.status === 401 || res.status === 403) {
+  if (res.status === 401 || res.status === 403) {
     // Token invalid/expired or user not allowed
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
-    if (!res.ok) {
+  if (!res.ok) {
     // Let React Router show the default error boundary or your custom one
-    throw new Error("Could not load dependencies");
+    throw new Error('Could not load dependencies');
   }
 
-    const data = await res.json()
-    console.log("ALLL DEPENDCENCIES", data)
-    return data; 
+  const data = await res.json();
+  console.log('ALLL DEPENDCENCIES', data);
+  return data;
 }
 
-
-export async function add_dependency(vortakt_id, nachtakt_id){
+// add_dependency
+export async function add_dependency(vortakt_id, nachtakt_id) {
   const res = await fetch(`${BASE_URL}/api/orgarhythmus/add_dependency/`, {
-    method: "POST", 
+    method: 'POST',
     headers: {
-      "content-type": "application/json"
+      'content-type': 'application/json',
     },
-    body: JSON.stringify({ vortakt_id, nachtakt_id })
+    body: JSON.stringify({ vortakt_id, nachtakt_id }),
   });
 
   if (!res.ok) {
-    throw new Error("Failed to add dependency");
+    throw new Error('Failed to add dependency');
   }
 
   const data = await res.json();
   return data;
 }
 
-
-export async function delete_dependency(dep_id){
-    const token = localStorage.getItem("access_token");
-
-    if (!token) {
-        throw redirect("/login");
-    }
-
-    const res = await fetch(`${BASE_URL}/api/orgarhythmus/delete_dependency/`, {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${token}`,
-            "content-type": "application/json"
-        },  
-        body: JSON.stringify({ dep_id }),
-    });
-
-    if (res.status === 401 || res.status === 403) {
-        throw redirect("/login");
-    }
-
-    if (!res.ok) {
-        throw new Error("Could not delete dependency");
-    }
-
-    const data = await res.json();
-    return data;  // ✅ Return the response
-}
-
-
-
-
-
-//_______________________________________________
-//_______________________________________________
-//________________ATTEMPTS___________________
-//_______________________________________________
-//_______________________________________________
-
-
-// export async function fetch_all_attempts(){
-//   const token = localStorage.getItem("access_token")
-
-//   if (!token) {
-//     throw redirect("/login")
-//   }
-
-//   const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempts/`, {
-//     headers: {
-//       "Authorization": `Bearer ${token}`
-//     }
-//   })
-
-//   if (res.status === 401 || res.status === 403) {
-//     throw new Error("Could not load tasks");
-//   }
-
-//   const data = await res.json();
-//   // console.log("The fetched attempts from the API", data)
-
-//   console.log("simply doesnt return antyhitn ganymore: ", data)
-//   return data
-// }
-
-
-export async function fetch_all_attempts(){
-  const projectId = getCurrentProjectIdFromLocation();
-  const token = localStorage.getItem("access_token")
+// delete_dependency
+export async function delete_dependency(dep_id) {
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login")
+    throw redirect('/login');
   }
 
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_attempts_for_this_project`, {
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/delete_dependency/`, {
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
+      Authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ dep_id }),
+  });
 
   if (res.status === 401 || res.status === 403) {
-    throw new Error("Could not load tasks");
+    throw redirect('/login');
+  }
+
+  if (!res.ok) {
+    throw new Error('Could not delete dependency');
+  }
+
+  const data = await res.json();
+  return data; // ✅ Return the response
+}
+
+//_______________________________________________
+//_______________________________________________
+//__________________ATTEMPTS____________________
+//_______________________________________________
+//_______________________________________________
+
+// fetch_all_attempts
+export async function fetch_all_attempts() {
+  const projectId = getCurrentProjectIdFromLocation();
+  const token = localStorage.getItem('access_token');
+
+  if (!token) {
+    throw redirect('/login');
+  }
+
+  const res = await fetch(
+    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_attempts_for_this_project`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('Could not load tasks');
   }
 
   const data = await res.json();
   // console.log("The fetched attempts from the API", data)
 
-  console.log("simply doesnt return antyhitn ganymore: ", data)
-  return data.attempts
+  console.log('simply doesnt return antyhitn ganymore: ', data);
+  return data.attempts;
 }
 
-
-// export async function add_attempt_dependecy(
-//   vortakt_attempt_id,
-//   nachtakt_attempt_id
-// ){
-//   const token = localStorage.getItem("access_token")
-
-//   if (!token) {
-//     throw redirect("/login")
-//   }
-
-//   const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempts/`, {
-//     headers: {
-//       "Authorization": `Bearer ${token}`
-//     },
-//     body: JSON.stringify({ vortakt_attempt_id, nachtakt_attempt_id })
-//   })
-
-//   if (!res.ok) {
-//     throw new Error("Failed to add dependency");
-//   }
-
-//   const data = await res.json();
-//   return data;
-
-
-// }
-
-export async function add_attempt_dependency(
-  vortakt_attempt_id,
-  nachtakt_attempt_id
-) {
-  const token = localStorage.getItem("access_token");
+// add_attempt_dependency
+export async function add_attempt_dependency(vortakt_attempt_id, nachtakt_attempt_id) {
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   const res = await fetch(`${BASE_URL}/api/orgarhythmus/add_attempt_dependency/`, {
-    method: "POST",                     // 👈 important
+    method: 'POST', // 👈 important
     headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ vortakt_attempt_id, nachtakt_attempt_id }),
   });
 
   if (!res.ok) {
-    console.error("Backend failed:", res.status);
-    throw new Error("Failed to add dependency");
+    console.error('Backend failed:', res.status);
+    throw new Error('Failed to add dependency');
   }
 
   const data = await res.json();
   return data;
 }
 
-
-
-
-
-
+// fetch_all_attempt_dependencies
 export async function fetch_all_attempt_dependencies() {
-  const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
-  const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/all_attempt_dependencies/`,
-    {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    }
-  );
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/all_attempt_dependencies/`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch attempt dependencies");
+    throw new Error('Failed to fetch attempt dependencies');
   }
 
   return await res.json();
 }
 
-
-
-
-
-
-// export async function update_attempt_slot_index(attempt_id, slot_index) {
-//   const token = localStorage.getItem("access_token");
-
-//   if (!token) {
-//     throw redirect("/login");
-//   }
-
-//   const res = await fetch(
-//     `${BASE_URL}/api/orgarhythmus/update_attempt_slot_index/`,
-//     {
-//       method: "POST",
-//       headers: {
-//         "Authorization": `Bearer ${token}`,
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({ attempt_id, slot_index }),
-//     }
-//   );
-
-//   if (!res.ok) {
-//     console.error("Backend failed:", res.status);
-//     throw new Error("Failed to update attempt slot_index");
-//   }
-
-//   return await res.json();
-// }
-
-
-
-
+// update_attempt_slot_index
 export async function update_attempt_slot_index(attempt_id, slot_index) {
-  const token = localStorage.getItem("access_token");
-  if (!token) throw redirect("/login");
+  const token = localStorage.getItem('access_token');
+  if (!token) throw redirect('/login');
 
-  const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/update_attempt_slot_index/`,
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ attempt_id, slot_index }),
-    }
-  );
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/update_attempt_slot_index/`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ attempt_id, slot_index }),
+  });
 
   if (!res.ok) {
-    console.error("Backend failed:", res.status);
-    throw new Error("Failed to update attempt slot_index");
+    console.error('Backend failed:', res.status);
+    throw new Error('Failed to update attempt slot_index');
   }
 
   return await res.json();
 }
 
-
-
+// delete_attempt_dependency
 export async function delete_attempt_dependency(dependency_id) {
-  const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
-  const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/delete_attempt_dependency/`,
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ dependency_id }),
-    }
-  );
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/delete_attempt_dependency/`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ dependency_id }),
+  });
 
   if (!res.ok) {
-    console.error("Backend failed:", res.status);
-    throw new Error("Failed to delete attempt dependency");
+    console.error('Backend failed:', res.status);
+    throw new Error('Failed to delete attempt dependency');
   }
 
   return await res.json();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //_______________________________________________
 //_______________________________________________
-//__________________PROJECTS_____________________
+// __________________PROJECTS_____________________
 //_______________________________________________
 //_______________________________________________
 
+// fetch_all_projects
 export async function fetch_all_projects() {
-  const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/`, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   if (!res.ok) {
-    throw new Error("Could not load projects");
+    throw new Error('Could not load projects');
   }
 
   return await res.json();
 }
 
+// create_project_api
 export async function create_project_api(name, description) {
-  const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/create/`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       name,
@@ -557,119 +391,83 @@ export async function create_project_api(name, description) {
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}));
-    console.error("Create project failed:", errorBody);
-    throw new Error(errorBody.detail || "Failed to create project");
+    console.error('Create project failed:', errorBody);
+    throw new Error(errorBody.detail || 'Failed to create project');
   }
 
   return await res.json();
 }
 
-
-
-
-
-
-
-
+// fetch_project_detail
 export async function fetch_project_detail(projectId) {
-  const token = localStorage.getItem("access_token");
+  const token = localStorage.getItem('access_token');
 
   if (!token) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/`, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw redirect("/login");
+    throw redirect('/login');
   }
 
   if (!res.ok) {
-    throw new Error("Could not load project");
+    throw new Error('Could not load project');
   }
 
   return await res.json();
 }
 
+// ___________Teams
 
-import { authFetch } from "../auth";  // Pfad ggf. anpassen
-
-
-
-
-
-//_____*********______________ TEAMS ___________________********____
-
-//_______________________________________________
-
-// orgarhythmus/org_API_teams.js
-
-
+// fetchTeamsForProject
 export async function fetchTeamsForProject(projectId) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
-    method: "GET",
+    method: 'GET',
   });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch teams for project");
+    throw new Error('Failed to fetch teams for project');
   }
 
   return await res.json();
 }
 
+// createTeamForProject
 export async function createTeamForProject(projectId, payload) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(payload),
     // Content-Type setzt authFetch automatisch
   });
 
   if (!res.ok) {
-    throw new Error("Failed to create team");
+    throw new Error('Failed to create team');
   }
 
   return await res.json();
 }
 
+// ___________Tasks
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// fetchTasksForProject
 export async function fetchTasksForProject(projectId) {
-  const res = await authFetch(
-    `/api/orgarhythmus/projects/${projectId}/tasks/`,
-    {
-      method: "GET",
-    }
-  );
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
+    method: 'GET',
+  });
 
   if (!res.ok) {
-    throw new Error("Failed to fetch tasks for project");
+    throw new Error('Failed to fetch tasks for project');
   }
 
   const data = await res.json();
@@ -677,82 +475,29 @@ export async function fetchTasksForProject(projectId) {
   return data.tasks || data;
 }
 
+// createTaskForProject
 export async function createTaskForProject(projectId, payload) {
-  const res = await authFetch(
-    `/api/orgarhythmus/projects/${projectId}/tasks/`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-      // Content-Type kommt von authFetch
-    }
-  );
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    // Content-Type kommt von authFetch
+  });
 
   if (!res.ok) {
-    throw new Error("Failed to create project task");
+    throw new Error('Failed to create project task');
   }
 
   return await res.json();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// /** 🗑️ Delete a team in this project */
-// export async function deleteTeamForProject(projectId, teamId) {
-//   const res = await authFetch(
-//     `/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`,
-//     {
-//       method: "DELETE",
-//     }
-//   );
-
-//   if (!res.ok) {
-//     throw new Error("Failed to delete team");
-//   }
-
-//   // Backend könnte 204 No Content liefern – dann gibt es kein JSON
-//   try {
-//     return await res.json();
-//   } catch {
-//     return null;
-//   }
-// }
-
+// deleteTeamForProject
 export async function deleteTeamForProject(projectId, teamId) {
-  const res = await authFetch(
-    `/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`,
-    {
-      method: "DELETE",
-    }
-  );
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`, {
+    method: 'DELETE',
+  });
 
   if (!res.ok) {
-    throw new Error("Failed to delete team");
+    throw new Error('Failed to delete team');
   }
 
   // If response is 204 No Content → return nothing
@@ -767,8 +512,3 @@ export async function deleteTeamForProject(projectId, teamId) {
     return null;
   }
 }
-
-
-
-
-
