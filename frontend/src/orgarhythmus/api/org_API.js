@@ -4,6 +4,200 @@ import { authFetch } from '../../auth'; // Pfad ggf. anpassen
 
 //_______________________________________________
 //_______________________________________________
+//____________________HELPER_____________________
+//_______________________________________________
+//_______________________________________________
+
+// getCurrentProjectIdFromLocation (helper)
+function getCurrentProjectIdFromLocation() {
+  // Beispiel-Pfad: /orgarhythmus/projects/1/attempts
+  const path = window.location.pathname;
+  const parts = path.split('/').filter(Boolean);
+  // ["orgarhythmus", "projects", "1", "attempts"]
+
+  const projectsIndex = parts.indexOf('projects');
+  if (projectsIndex === -1 || projectsIndex + 1 >= parts.length) {
+    return null;
+  }
+
+  const id = parseInt(parts[projectsIndex + 1], 10);
+
+  const projectId = Number.isNaN(id) ? null : id;
+
+  // console.log('Inside getCurrentProjectIdFromLocation (PROJECT ID): ', projectId);
+  return projectId;
+}
+
+//_______________________________________________
+//_______________________________________________
+//___________________PROJECT_____________________
+//_______________________________________________
+//_______________________________________________
+
+// fetch_all_projects
+export async function fetch_all_projects() {
+  const token = localStorage.getItem('access_token');
+
+  if (!token) {
+    throw redirect('/login');
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect('/login');
+  }
+
+  if (!res.ok) {
+    throw new Error('Could not load projects');
+  }
+
+  return await res.json();
+}
+
+// create_project_api
+export async function create_project_api(name, description) {
+  const token = localStorage.getItem('access_token');
+
+  if (!token) {
+    throw redirect('/login');
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/create/`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      name,
+      description,
+    }),
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect('/login');
+  }
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    console.error('Create project failed:', errorBody);
+    throw new Error(errorBody.detail || 'Failed to create project');
+  }
+
+  return await res.json();
+}
+
+// fetch_project_detail
+export async function fetch_project_detail(projectId) {
+  const token = localStorage.getItem('access_token');
+
+  if (!token) {
+    throw redirect('/login');
+  }
+
+  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw redirect('/login');
+  }
+
+  if (!res.ok) {
+    throw new Error('Could not load project');
+  }
+
+  return await res.json();
+}
+
+//_______________________________________________
+//_______________________________________________
+//____________________TEAMS______________________
+//_______________________________________________
+//_______________________________________________
+
+// fetch_all_teams
+export async function fetch_all_teams(projectId) {
+  const res = await authFetch(
+    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/project_teams_detailed/`,
+  );
+
+  if (res.status === 401 || res.status === 403) {
+    const err = new Error('unauthorized');
+    err.status = res.status;
+    throw err;
+  }
+
+  if (!res.ok) {
+    const err = new Error('failed_to_load_teams');
+    err.status = res.status;
+    throw err;
+  }
+
+  const data = await res.json();
+  return data.teams;
+}
+
+// fetchTeamsForProject
+export async function fetchTeamsForProject(projectId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
+    method: 'GET',
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch teams for project');
+  }
+
+  return await res.json();
+}
+
+// createTeamForProject
+export async function createTeamForProject(projectId, payload) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    // Content-Type setzt authFetch automatisch
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to create team');
+  }
+
+  return await res.json();
+}
+
+// deleteTeamForProject
+export async function deleteTeamForProject(projectId, teamId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to delete team');
+  }
+
+  // If response is 204 No Content → return nothing
+  if (res.status === 204) {
+    return null;
+  }
+
+  // Otherwise try to parse JSON
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+//_______________________________________________
+//_______________________________________________
 //____________________TASKS______________________
 //_______________________________________________
 //_______________________________________________
@@ -30,69 +224,37 @@ export async function delete_task(id) {
   return data;
 }
 
-//_______________________________________________
-//_______________________________________________
-//____________________TEAMS______________________
-//_______________________________________________
-//_______________________________________________
+// ___________Tasks
 
-// getCurrentProjectIdFromLocation (helper)
-function getCurrentProjectIdFromLocation() {
-  // Beispiel-Pfad: /orgarhythmus/projects/1/attempts
-  const path = window.location.pathname;
-  const parts = path.split('/').filter(Boolean);
-  // ["orgarhythmus", "projects", "1", "attempts"]
-
-  const projectsIndex = parts.indexOf('projects');
-  if (projectsIndex === -1 || projectsIndex + 1 >= parts.length) {
-    return null;
-  }
-
-  const id = parseInt(parts[projectsIndex + 1], 10);
-
-  const projectId = Number.isNaN(id) ? null : id;
-
-  console.log('Inside getCurrentProjectIdFromLocation (PROJECT ID): ', projectId);
-  return projectId;
-}
-
-// fetch_all_teams
-export async function fetch_all_teams(projectId) {
-  // const projectId = getCurrentProjectIdFromLocation();
-
-  console.log('Inside fetch_all_teams (PROJECT ID): ', projectId);
-
-  const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_teams_for_this_project/`,
-  );
+// fetchTasksForProject
+export async function fetchTasksForProject(projectId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
+    method: 'GET',
+  });
 
   if (!res.ok) {
-    console.log('Something went wrong calling teams in api.js');
-    return;
+    throw new Error('Failed to fetch tasks for project');
   }
 
   const data = await res.json();
-  return data.teams;
+  // falls dein Backend { tasks: [...] } zurückgibt, nimm data.tasks
+  return data.tasks || data;
 }
 
-// // fetch_all_teams
-// export async function fetch_all_teams() {
-//   const projectId = getCurrentProjectIdFromLocation();
+// createTaskForProject
+export async function createTaskForProject(projectId, payload) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    // Content-Type kommt von authFetch
+  });
 
-//   console.log('Inside fetch_all_teams (PROJECT ID): ', projectId);
+  if (!res.ok) {
+    throw new Error('Failed to create project task');
+  }
 
-//   const res = await fetch(
-//     `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_teams_for_this_project/`,
-//   );
-
-//   if (!res.ok) {
-//     console.log('Something went wrong calling teams in api.js');
-//     return;
-//   }
-
-//   const data = await res.json();
-//   return data.teams;
-// }
+  return await res.json();
+}
 
 //_______________________________________________
 //_______________________________________________
@@ -222,178 +384,4 @@ export async function delete_attempt_dependency(dependency_id) {
   }
 
   return await res.json();
-}
-
-//_______________________________________________
-//_______________________________________________
-// __________________PROJECTS_____________________
-//_______________________________________________
-//_______________________________________________
-
-// fetch_all_projects
-export async function fetch_all_projects() {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    throw new Error('Could not load projects');
-  }
-
-  return await res.json();
-}
-
-// create_project_api
-export async function create_project_api(name, description) {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/create/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name,
-      description,
-    }),
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    console.error('Create project failed:', errorBody);
-    throw new Error(errorBody.detail || 'Failed to create project');
-  }
-
-  return await res.json();
-}
-
-// fetch_project_detail
-export async function fetch_project_detail(projectId) {
-  const token = localStorage.getItem('access_token');
-
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  const res = await fetch(`${BASE_URL}/api/orgarhythmus/projects/${projectId}/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    throw redirect('/login');
-  }
-
-  if (!res.ok) {
-    throw new Error('Could not load project');
-  }
-
-  return await res.json();
-}
-
-// ___________Teams
-
-// fetchTeamsForProject
-export async function fetchTeamsForProject(projectId) {
-  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
-    method: 'GET',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch teams for project');
-  }
-
-  return await res.json();
-}
-
-// createTeamForProject
-export async function createTeamForProject(projectId, payload) {
-  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    // Content-Type setzt authFetch automatisch
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to create team');
-  }
-
-  return await res.json();
-}
-
-// ___________Tasks
-
-// fetchTasksForProject
-export async function fetchTasksForProject(projectId) {
-  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
-    method: 'GET',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch tasks for project');
-  }
-
-  const data = await res.json();
-  // falls dein Backend { tasks: [...] } zurückgibt, nimm data.tasks
-  return data.tasks || data;
-}
-
-// createTaskForProject
-export async function createTaskForProject(projectId, payload) {
-  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    // Content-Type kommt von authFetch
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to create project task');
-  }
-
-  return await res.json();
-}
-
-// deleteTeamForProject
-export async function deleteTeamForProject(projectId, teamId) {
-  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/${teamId}/`, {
-    method: 'DELETE',
-  });
-
-  if (!res.ok) {
-    throw new Error('Failed to delete team');
-  }
-
-  // If response is 204 No Content → return nothing
-  if (res.status === 204) {
-    return null;
-  }
-
-  // Otherwise try to parse JSON
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
 }

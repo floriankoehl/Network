@@ -16,8 +16,8 @@ import {
     delete_attempt_dependency
 } from "../../api/org_API";
 import snapSoundFile from "../../../assets/snap.mp3"
-import { useParams } from "react-router-dom";
-
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../../auth/AuthContext";
 
 
 
@@ -350,7 +350,8 @@ const headerNode = {
 export default function OrgAttempts() {
     // States & Variables
     const { projectId } = useParams();
-    console.log("PROJECT ID FROM PARAMS: ", projectId);
+    const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const [all_teams, setAll_Teams] = useState([]);
     const [all_tasks, setAll_Tasks] = useState([]);
@@ -375,73 +376,84 @@ export default function OrgAttempts() {
         async function loadData() {
             //LOAD TEAMS (& Tasks through Teams)
             async function loadTeams() {
-
-                //Fetch Teams
-                const all_teams = await fetch_all_teams(projectId);
-                setAll_Teams(all_teams)
-
-
-                //VARIABLES
-                const num_teams = all_teams.length
-                let currentY = TASK_HEIGHT + HEADER_BODY_GAP; // start below header
+                try {
+                    //Fetch Teams
+                    const all_teams = await fetch_all_teams(projectId);
+                    setAll_Teams(all_teams)
 
 
-                //RENDER TEAM NODES
-                const updated_group_nodes = all_teams
-                    .filter(team => team.tasks && team.tasks.length > 0)
-                    .map((team) => {
-                        let team_display_height = team.tasks.length * TASK_HEIGHT;
-                        // if (team_display_height < 100) {
-                        //   team_display_height = 100;
-                        // }
-                        if (!team.tasks) return null;
+                    //VARIABLES
+                    const num_teams = all_teams.length
+                    let currentY = TASK_HEIGHT + HEADER_BODY_GAP; // start below header
 
-                        const node = {
-                            id: `team-${team.id}`,
-                            type: "teamNode",
-                            position: { x: 0, y: currentY },   // 👈 use cumulative Y
-                            data: { label: team.name, color: team.color, height: team_display_height },
 
+                    //RENDER TEAM NODES
+                    const updated_group_nodes = all_teams
+                        .filter(team => team.tasks && team.tasks.length > 0)
+                        .map((team) => {
+                            let team_display_height = team.tasks.length * TASK_HEIGHT;
+                            // if (team_display_height < 100) {
+                            //   team_display_height = 100;
+                            // }
+                            if (!team.tasks) return null;
+
+                            const node = {
+                                id: `team-${team.id}`,
+                                type: "teamNode",
+                                position: { x: 0, y: currentY },   // 👈 use cumulative Y
+                                data: { label: team.name, color: team.color, height: team_display_height },
+
+                                draggable: false,
+                                selectable: false,
+                            };
+
+                            currentY += team_display_height + TEAM_GAP_PADDING_Y;  // 👈 move down for next team
+
+
+                            return node;
+                        }).filter(Boolean);;
+
+                    setGroupNodes(updated_group_nodes);
+
+
+                    //RENDER TASK NODES
+                    const updated_task_nodes = all_teams.flatMap((team) => {
+                        const tasks_of_this_team = team.tasks || [];
+
+                        return tasks_of_this_team.map((task, taskIndex) => ({
+                            id: `task-${task.id}`,          // globally unique ID
+                            type: "taskNode",               // must exist in nodeTypes
+                            parentNode: `team-${team.id}`,    // 👈 put it inside the TeamNode
+                            extent: "parent",
+                            position: {
+                                x: SIDEBAR_WIDTH,                         // left inside content area
+                                y: taskIndex * TASK_HEIGHT,            // vertical stacking
+                            },
+                            data: {
+                                label: task.name,
+                                // you can pass more here:
+                                // width: ..., color: ..., etc.
+                            },
                             draggable: false,
                             selectable: false,
-                        };
+                        }));
+                    });
 
-                        currentY += team_display_height + TEAM_GAP_PADDING_Y;  // 👈 move down for next team
+                    setTaskNodes(updated_task_nodes);
 
+                    setOverAllGap(get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP))
+                    setY_reactflow_size(currentY + get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP));
+                } catch (err) {
+                    console.error("Error loading teams:", err);
 
-                        return node;
-                    }).filter(Boolean);;
-
-                setGroupNodes(updated_group_nodes);
-
-
-                //RENDER TASK NODES
-                const updated_task_nodes = all_teams.flatMap((team) => {
-                    const tasks_of_this_team = team.tasks || [];
-
-                    return tasks_of_this_team.map((task, taskIndex) => ({
-                        id: `task-${task.id}`,          // globally unique ID
-                        type: "taskNode",               // must exist in nodeTypes
-                        parentNode: `team-${team.id}`,    // 👈 put it inside the TeamNode
-                        extent: "parent",
-                        position: {
-                            x: SIDEBAR_WIDTH,                         // left inside content area
-                            y: taskIndex * TASK_HEIGHT,            // vertical stacking
-                        },
-                        data: {
-                            label: task.name,
-                            // you can pass more here:
-                            // width: ..., color: ..., etc.
-                        },
-                        draggable: false,
-                        selectable: false,
-                    }));
-                });
-
-                setTaskNodes(updated_task_nodes);
-
-                setOverAllGap(get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP))
-                setY_reactflow_size(currentY + get_overall_gap(num_teams, TEAM_GAP_PADDING_Y, HEADER_BODY_GAP));
+                    if (err.status === 401 || err.status === 403) {
+                        // optional: wipe auth state
+                        logout?.();
+                        // navigate instead of redirect()
+                        navigate("/login");
+                        return;
+                    }
+                }
             }
 
 
@@ -494,7 +506,7 @@ export default function OrgAttempts() {
             await loadAttemptDependencies();
         }
         loadData()
-    }, [])
+    }, [projectId, navigate, logout])
 
 
 
