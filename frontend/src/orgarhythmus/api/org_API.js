@@ -204,29 +204,8 @@ export async function deleteTeamForProject(projectId, teamId) {
 //_______________________________________________
 
 // delete_task
-// export async function delete_task(id) {
-//   const res = await authFetch(`/api/orgarhytmus/delete_task/`, {
-//     method: 'POST',
-//     headers: {
-//       'content-type': 'application/json',
-//     },
-//     body: JSON.stringify({ id }),
-//   });
-
-//   if (!res.ok) {
-//     console.log('Some Error');
-//     return;
-//   }
-
-//   const data = await res.json();
-//   // setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-//   console.log(data);
-
-//   return data;
-// }
-
 export async function delete_task(projectId, id) {
-  const res = await authFetch(`/api/orgarhythmus/${projectId}/tasks/${id}/delete/`, {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/${id}/delete/`, {
     method: 'DELETE',
   });
 

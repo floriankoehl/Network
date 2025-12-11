@@ -604,7 +604,7 @@ def project_tasks(request, project_id):
 
 # add_attempt_dependency
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def add_attempt_dependency(request):
     if request.method != "POST":
         return JsonResponse({"error": "Only POST allowed"}, status=405)
@@ -646,7 +646,7 @@ def add_attempt_dependency(request):
 
 # list_attempt_dependencies
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def list_attempt_dependencies(request):
     """
     Return all AttemptDependency objects as a simple JSON list.
@@ -668,7 +668,7 @@ def list_attempt_dependencies(request):
 
 # update_attempt_slot_index
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def update_attempt_slot_index(request):
     import json
     from .models import Attempt
@@ -701,7 +701,7 @@ def update_attempt_slot_index(request):
 
 # delete_attempt_dependency
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def delete_attempt_dependency(request):
     """
     Delete a single AttemptDependency by id.
