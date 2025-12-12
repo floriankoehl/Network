@@ -194,6 +194,30 @@ export async function deleteTeamForProject(projectId, teamId) {
   }
 }
 
+export async function reorder_project_teams(projectId, order) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/teams/reorder/`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ order }),
+  });
+
+  // helpful debug
+  const text = await res.text();
+  console.log('[reorder_project_teams] status:', res.status, 'body:', text);
+
+  if (!res.ok) {
+    throw new Error(text || 'Failed to reorder teams');
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 //_______________________________________________
 //_______________________________________________
 //____________________TASKS______________________

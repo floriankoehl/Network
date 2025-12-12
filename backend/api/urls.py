@@ -23,6 +23,8 @@ urlpatterns = [
     path("orgarhythmus/projects/<int:project_id>/teams/", views.project_teams, name="project_teams" ), 
     path("orgarhythmus/projects/<int:project_id>/teams/<int:team_id>/", views.project_team_detail),
     path("orgarhythmus/projects/<int:project_id>/project_teams_expanded/", views.project_teams_expanded, name="project_teams_expanded", ), 
+    path("orgarhythmus/projects/<int:project_id>/teams/reorder/", views.reorder_project_teams, name="reorder_project_teams",
+),
 
     #Tasks
     path("orgarhythmus/projects/<int:project_id>/tasks/", views.project_tasks, name="project_tasks", ),

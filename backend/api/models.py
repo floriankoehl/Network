@@ -37,6 +37,8 @@ class Team(models.Model):
     color = models.CharField(max_length=200, blank=True, null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="teams", default=1, null=True,
         blank=True, )
+    line_index = models.IntegerField(blank=True, null=True)
+    
 
     def __str__(self):
         return self.name
@@ -50,7 +52,7 @@ class Task(models.Model):
     team = models.ForeignKey(Team, on_delete=SET_NULL, null=True, blank=True, related_name="tasks")
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks", default=1, null=True,
         blank=True, )
-
+    
 
 
     def save(self, *args, **kwargs):

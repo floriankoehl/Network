@@ -26,7 +26,13 @@ from .models import (
     Task,
     Project,
 )
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.db import transaction
 
+from .models import Team
 
 
 
@@ -193,6 +199,7 @@ class TeamExpandedSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "color",
+            "line_index",
             "tasks",
         ]
 
@@ -420,6 +427,39 @@ def project_team_detail(request, project_id, team_id):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def reorder_project_teams(request, project_id):
+    """
+    Body:
+      { "order": [26, 28, 40, 41] }   # team ids (ints), in desired order
+    """
+    order = request.data.get("order", None)
+
+    if not isinstance(order, list) or not all(isinstance(x, int) for x in order):
+        return Response(
+            {"detail": "Expected body {order: [int, int, ...]}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # only teams of this project
+    qs = Team.objects.filter(project_id=project_id, id__in=order)
+
+    existing_ids = set(qs.values_list("id", flat=True))
+    missing = [tid for tid in order if tid not in existing_ids]
+    if missing:
+        return Response(
+            {"detail": "Some team ids not found in this project", "missing": missing},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    with transaction.atomic():
+        for idx, team_id in enumerate(order):
+            Team.objects.filter(project_id=project_id, id=team_id).update(line_index=idx)
+
+    return Response({"ok": True, "saved_order": order}, status=status.HTTP_200_OK)
 
 
 #_______________________________________________________________________________________________

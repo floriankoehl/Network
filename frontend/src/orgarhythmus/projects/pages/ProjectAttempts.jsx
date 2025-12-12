@@ -13,7 +13,8 @@ import {
     add_attempt_dependency,
     fetch_all_attempt_dependencies,
     update_attempt_slot_index,
-    delete_attempt_dependency
+    delete_attempt_dependency,
+    reorder_project_teams
 } from "../../api/org_API";
 import snapSoundFile from "../../../assets/snap.mp3"
 import whipSoundFile from "../../../assets/whip.mp3"
@@ -38,6 +39,13 @@ function extractAttemptId(nodeId) {
 
     // Fallback: maybe it's already just "19"
     const num = parseInt(nodeId, 10);
+    return Number.isNaN(num) ? null : num;
+}
+
+// ************** -> ADDED NOW 5: Helper extractTeamId ***************** : 
+function extractTeamId(teamNodeId) {
+    if (!teamNodeId?.startsWith("team-")) return null;
+    const num = parseInt(teamNodeId.replace("team-", ""), 10);
     return Number.isNaN(num) ? null : num;
 }
 
@@ -805,7 +813,21 @@ export default function OrgAttempts() {
 
                 try {
                     //Fetch Teams
-                    const all_teams = await project_teams_expanded(projectId);
+                    const all_teams_raw = await project_teams_expanded(projectId);
+
+                    console.log("[RAW teams keys example]", Object.keys(all_teams_raw?.[0] ?? {}));
+                    console.log("[RAW teams raw line_index]", all_teams_raw.map(t => ({ id: t.id, li: t.line_index })));
+
+
+                    const all_teams = [...all_teams_raw].sort((a, b) => {
+                        const ai = a.line_index ?? 999999;
+                        const bi = b.line_index ?? 999999;
+                        if (ai !== bi) return ai - bi;
+                        return a.id - b.id; // stable fallback
+                    });
+
+                    console.log("[loadTeams] sortedTeams:", all_teams.map(t => ({ id: t.id, li: t.line_index })));
+
                     setAll_Teams(all_teams)
 
 
@@ -1014,6 +1036,23 @@ export default function OrgAttempts() {
             console.log("[TEAM DROP] next order:", nextOrder);
 
             setTeamOrder(nextOrder);
+
+            const orderIds = nextOrder
+                .map(extractTeamId)
+                .filter((x) => x !== null);
+
+            console.log("[TEAM DROP] saving orderIds:", orderIds);
+
+            (async () => {
+                try {
+                    const res = await reorder_project_teams(projectId, orderIds);
+                    console.log("[TEAM DROP] saved order:", res);
+                } catch (err) {
+                    console.error("[TEAM DROP] failed to save order:", err);
+                }
+            })();
+
+
             return;
         }
 
@@ -1179,7 +1218,7 @@ export default function OrgAttempts() {
                             }
                                 onClick={() => setDep_setting_selected(true)}
                                 variant="contained"
-                            >Change Dependencies</Button>
+                            >Delete Dependencies</Button>
 
 
 
