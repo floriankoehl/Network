@@ -21,7 +21,7 @@ import clackSoundFile from "../../../assets/pen_down.mp3"
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthContext";
 import { ChevronsDownUp } from 'lucide-react';
-
+import Button from '@mui/material/Button';
 
 
 // ________________________GLOBALS AND HELPERS________________________
@@ -121,6 +121,7 @@ function snapAttemptX(x) {
 const isMobile = window.innerWidth <= 768;
 let TASK_HEIGHT = 60;
 let TASK_WIDTH = 60;
+let SETTINGS_HEIGHT = 85;
 const ENTRIES = 25
 
 let SIDEBAR_WIDTH = 80;
@@ -510,10 +511,20 @@ export default function OrgAttempts() {
 
     const REACTFLOW_HEIGHT = 700;
 
+    const [dep_setting_selected, setDep_setting_selected] = useState(true)
 
 
 
 
+
+    useEffect(() => {
+        setGroupNodes((nodes) =>
+            nodes.map((node) => ({
+                ...node,
+                selectable: dep_setting_selected,
+            }))
+        );
+    }, [dep_setting_selected]);
 
 
 
@@ -678,7 +689,7 @@ export default function OrgAttempts() {
 
 
         ]);
-    }, [groupNodes, taskNodes, attempt_nodes]);
+    }, [groupNodes, taskNodes, attempt_nodes, dep_setting_selected]);
 
 
 
@@ -811,7 +822,8 @@ export default function OrgAttempts() {
                         md:max-w-[700px] sm:max-w-full p-3">
 
                 {/* Delete Dependency */}
-                {selectedDepId && (
+                {/* TODO should be outdated */}
+                {/* {selectedDepId && (
                     <div className="absolute top-15 left-0 w-full flex justify-center mt-4">
                         <button
                             onClick={handleDeleteSelectedDependency}
@@ -824,12 +836,58 @@ export default function OrgAttempts() {
                             Delete selected dependency
                         </button>
                     </div>
-                )}
+                )} */}
 
 
                 {/* ReactFlow */}
-                <div style={{ width: COMPONENT_WIDTH, height: y_reactflow_size }} className="
+                {/* IMPORTANT: (height: y_reactflow_size + 50) */}
+                <div style={{ width: COMPONENT_WIDTH, height: (y_reactflow_size + SETTINGS_HEIGHT) }} className="
                                 shadow-xl shadow-black/30 rounded-xl max-h-[75vh] bg-gray-200">
+                    <div style={{ height: SETTINGS_HEIGHT }} className="w-full relative flex flex-col gap-2">
+                        <div className="h-[40px] flex gap-2">
+                            <Button className={`
+                            
+                            ${dep_setting_selected ? "!bg-gray-300" : "!bg-gray-500"} 
+                            w-full h-full 
+                            `
+                            }
+                                onClick={() => setDep_setting_selected(false)}
+                                variant="contained"
+                            >Change Group Display</Button>
+
+                            <Button className={`
+                            
+                            ${dep_setting_selected ? "!bg-gray-500" : "!bg-gray-300"} 
+                            w-full h-full 
+                            `
+                            }
+                                onClick={() => setDep_setting_selected(true)}
+                                variant="contained"
+                            >Change Dependencies</Button>
+
+
+
+                            {/* <Button className="w-full h-full !bg-blue-300" variant="contained">Change Dependencies</Button> */}
+                        </div>
+                        <div className="mb-1 ">
+                            {selectedDepId && (
+                                <div className="h–full ">
+                                    <button
+                                        onClick={handleDeleteSelectedDependency}
+                                        className="
+                                        px-4 py-2 rounded-md 
+                                        bg-red-500 text-white 
+                                        text-sm font-medium 
+                                        hover:bg-red-600 
+                                        shadow-sm">
+                                        Delete selected dependency
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+
+                    </div>
                     <ReactFlow
                         nodes={mergedNodes}
                         edges={edges}
