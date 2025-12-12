@@ -1171,7 +1171,7 @@ export default function OrgAttempts() {
         <>
             <div
                 style={{ height: `${y_reactflow_size + SETTINGS_HEIGHT}px` }}
-                className="w-screen !h-screen
+                className="w-screen 
                         flex justify-center items-center 
                         lg:max-w-full  lg:px-10 bg-white
                         md:max-w-[700px] sm:max-w-full p-3">
@@ -1197,7 +1197,7 @@ export default function OrgAttempts() {
                 {/* ReactFlow */}
                 {/* IMPORTANT: (height: y_reactflow_size + 50) */}
                 <div style={{ width: COMPONENT_WIDTH, height: (y_reactflow_size + SETTINGS_HEIGHT) }} className="
-                                shadow-xl shadow-black/30 rounded-xl max-h-[75vh] bg-gray-200">
+                                shadow-xl shadow-black/30 rounded-xl bg-gray-200 mt-30 mb-5 mx-5 sm:mx-10 ">
                     <div style={{ height: SETTINGS_HEIGHT }} className="w-full relative flex flex-col gap-2">
                         <div className="h-[40px] flex gap-2">
                             <Button className={`
