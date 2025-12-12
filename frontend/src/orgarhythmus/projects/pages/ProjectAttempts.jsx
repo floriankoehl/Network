@@ -127,7 +127,7 @@ const ENTRIES = 25
 let SIDEBAR_WIDTH = 80;
 let TASK_SIDEBAR_WIDTH = 100;
 
-const TEAM_GAP_PADDING_Y = 5;
+const TEAM_GAP_PADDING_Y = 0;
 const TASK_GAP_PADDING_X = 0;
 const HEADER_BODY_GAP = 10;
 
@@ -819,7 +819,7 @@ export default function OrgAttempts() {
     return (
         <>
             <div
-                style={{ height: `${y_reactflow_size}px` }}
+                style={{ height: `${y_reactflow_size + SETTINGS_HEIGHT}px` }}
                 className="w-screen !h-screen
                         flex justify-center items-center 
                         lg:max-w-full  lg:px-10 bg-white
@@ -892,38 +892,41 @@ export default function OrgAttempts() {
 
 
                     </div>
-                    <ReactFlow
-                        nodes={mergedNodes}
-                        edges={edges}
-                        nodeTypes={nodeTypes}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        onNodeDragStop={onNodeDragStop}
-                        elementsSelectable={true}               // (default, but nice to be explicit)
-                        deleteKeyCode={["Delete", "Backspace"]}
-                        // minZoom={1}
-                        onEdgeClick={(evt, edge) => {
-                            console.log("EDGE CLICKED:", edge);
-                            if (edge.id?.startsWith("attemptdep-")) {
-                                const depId = parseInt(edge.id.replace("attemptdep-", ""), 10);
-                                if (!Number.isNaN(depId)) {
-                                    setSelectedDepId(depId);
-                                    setSelectedEdgeId(edge.id);
+                    <div style={{ height: y_reactflow_size }}>
+                        <ReactFlow
+                            nodes={mergedNodes}
+                            edges={edges}
+                            nodeTypes={nodeTypes}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onNodeDragStop={onNodeDragStop}
+                            elementsSelectable={true}               // (default, but nice to be explicit)
+                            deleteKeyCode={["Delete", "Backspace"]}
+                            // minZoom={1}
+                            onEdgeClick={(evt, edge) => {
+                                console.log("EDGE CLICKED:", edge);
+                                if (edge.id?.startsWith("attemptdep-")) {
+                                    const depId = parseInt(edge.id.replace("attemptdep-", ""), 10);
+                                    if (!Number.isNaN(depId)) {
+                                        setSelectedDepId(depId);
+                                        setSelectedEdgeId(edge.id);
+                                    }
+                                } else {
+                                    setSelectedDepId(null);
+                                    setSelectedEdgeId(null);
                                 }
-                            } else {
-                                setSelectedDepId(null);
-                                setSelectedEdgeId(null);
-                            }
-                        }}
-                        translateExtent={[
-                            [0, 0],
-                            [COMPONENT_WIDTH, y_reactflow_size],
-                        ]}
-                    >
+                            }}
+                            translateExtent={[
+                                [0, 0],
+                                [COMPONENT_WIDTH, y_reactflow_size],
+                            ]}
+                        >
 
 
-                    </ReactFlow>
+                        </ReactFlow>
+                    </div>
+
                 </div>
 
 
