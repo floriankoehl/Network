@@ -356,7 +356,7 @@ function TeamNode({ id, data }) {
                     className="text-xs font-semibold tracking-wide text-black"
                     style={{ textOrientation: "mixed" }}
                 >
-                    {data.label} - {id}
+                    {data.label}
                 </span>
                 <div
                     className={`
