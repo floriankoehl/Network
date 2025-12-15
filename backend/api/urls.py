@@ -54,7 +54,7 @@ urlpatterns = [
     path('company/network_connection/<int:comp_id>/', views.network_connection),
     path('skills/dummy_data/', views.dummy_data),
 
-
+#
 ]
 
 
