@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-%93dq0*u(1im_bz-e$2esdrr!2-fd3oh=rv11d5kd10116@thv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
+DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "backend", "app.floriankoehl.com", "api.floriankoehl.com"]
 
@@ -76,7 +76,7 @@ CORS_ALLOWED_ORIGINS = [
 
 import os
 
-
+DEBUG = True  # Du hast das schon
 
 # Cookie settings - unterschiedlich für Dev/Production
 if DEBUG:
