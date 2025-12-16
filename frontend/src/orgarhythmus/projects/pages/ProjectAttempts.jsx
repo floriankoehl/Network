@@ -99,7 +99,7 @@ function get_overall_gap(num_tasks, gap, header_gap) {
 const isMobile = window.innerWidth <= 768;
 let TASK_HEIGHT = 60;
 let TASK_WIDTH = 60;
-let SETTINGS_HEIGHT = 85;
+let SETTINGS_HEIGHT = 120;
 const DEFAULT_ENTRIES = 25; // fallback if no dates
 
 let SIDEBAR_WIDTH = 80;
@@ -275,16 +275,19 @@ function TeamNode({ id, data }) {
   return (
     <div
       style={{ width: data.componentWidth, height: height }}
-      className="relative flex h-full overflow-hidden rounded-lg border border-slate-300"
+      className="relative flex h-full overflow-visible rounded-lg border border-slate-300"
     >
-      {/* top color strip */}
+      {/* top color strip (sit slightly above content so it doesn't eat into task height) */}
       <div
         style={{
           backgroundColor: data.color,
           height: '3px',
           width: '100%',
+          top: '-3px',
+          left: 0,
+          position: 'absolute',
+          pointerEvents: 'none',
         }}
-        className="absolute top-0 left-0"
       />
 
       {/* Left vertical label */}
@@ -496,10 +499,13 @@ export default function OrgAttempts() {
   const [edges, setEdges] = useState([]);
   const [selectedDepId, setSelectedDepId] = useState(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [inspectSelectedNodeId, setInspectSelectedNodeId] = useState(null);
 
   const REACTFLOW_HEIGHT = 700;
 
   const [dep_setting_selected, setDep_setting_selected] = useState(true);
+  const [mode, setMode] = useState('dependency'); // 'order', 'dependency', 'inspect'
 
   // Collapsed days map: key = day index (1-based), value = true/false
   const [collapsedDays, setCollapsedDays] = useState({});
@@ -662,6 +668,51 @@ export default function OrgAttempts() {
       ...prev,
       [taskNodeId]: !prev[taskNodeId],
     }));
+  }, []);
+
+  // Bulk controls
+  const collapseAllTeams = useCallback(() => {
+    setCollapsedByTeamId(() => {
+      const next = {};
+      groupNodes.forEach((team) => {
+        next[team.id] = true;
+      });
+      return next;
+    });
+  }, [groupNodes]);
+
+  const expandAllTeams = useCallback(() => {
+    setCollapsedByTeamId(() => {
+      const next = {};
+      groupNodes.forEach((team) => {
+        next[team.id] = false;
+      });
+      return next;
+    });
+
+    // Also expand all tasks for consistency
+    setCollapsedTasks((prev) => {
+      if (!Object.keys(prev).length) return prev;
+      const next = { ...prev };
+      taskNodes.forEach((t) => {
+        if (next[t.id]) next[t.id] = false;
+      });
+      return next;
+    });
+  }, [groupNodes, taskNodes]);
+
+  const collapseAllDays = useCallback(() => {
+    setCollapsedDays(() => {
+      const next = {};
+      for (let i = 1; i <= entryCount; i++) {
+        next[i] = true;
+      }
+      return next;
+    });
+  }, [entryCount]);
+
+  const expandAllDays = useCallback(() => {
+    setCollapsedDays({});
   }, []);
 
   // ************** -> ADDED NOW 3: Helper - getTaskIdsForTeam ***************** :
@@ -1014,7 +1065,7 @@ export default function OrgAttempts() {
   useEffect(() => {
     // Mode toggle: when dep_setting_selected is true, we’re in dependency mode -> disable dragging to favor edge selection
     // When false (Change Group Display), enable dragging for team reorder; keep selectable false to avoid edge overlay issues
-    const draggingEnabled = !dep_setting_selected;
+    const draggingEnabled = mode === 'order';
     setGroupNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
@@ -1022,7 +1073,55 @@ export default function OrgAttempts() {
         draggable: draggingEnabled,
       })),
     );
-  }, [dep_setting_selected, collapsedDays, collapsedTasks, groupNodes.length]);
+  }, [mode, collapsedDays, collapsedTasks, groupNodes.length]);
+
+  // Update attempt nodes draggable state based on mode
+  useEffect(() => {
+    // In inspect mode, disable dragging for attempt nodes but allow selection
+    const attemptDraggingEnabled = mode !== 'inspect';
+    setAttemptNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        draggable: attemptDraggingEnabled,
+        selectable: true, // Always allow selection for edge highlighting
+      })),
+    );
+  }, [mode, attempt_nodes.length]);
+
+  // Highlight incoming/outgoing edges when a node is selected in inspect mode
+  useEffect(() => {
+    if (mode !== 'inspect') {
+      // Clear any edge highlighting when not in inspect mode
+      setEdges((prev) =>
+        prev.map((e) => {
+          const { stroke: _oldStroke, ...restStyle } = e.style || {};
+          return { ...e, style: { ...restStyle } };
+        }),
+      );
+      return;
+    }
+
+    setEdges((prev) =>
+      prev.map((e) => {
+        if (!inspectSelectedNodeId) {
+          const { stroke: _oldStroke, ...restStyle } = e.style || {};
+          return { ...e, style: { ...restStyle } };
+        }
+        const isIncoming = e.target === inspectSelectedNodeId;
+        const isOutgoing = e.source === inspectSelectedNodeId;
+
+        if (isIncoming) {
+          return { ...e, style: { ...e.style, stroke: 'red' } };
+        } else if (isOutgoing) {
+          return { ...e, style: { ...e.style, stroke: 'green' } };
+        } else {
+          // Clear stroke for edges not connected to selected node
+          const { stroke: _oldStroke, ...restStyle } = e.style || {};
+          return { ...e, style: { ...restStyle } };
+        }
+      }),
+    );
+  }, [mode, inspectSelectedNodeId]);
 
   // __________LOAD DATA
   useEffect(() => {
@@ -1268,6 +1367,9 @@ export default function OrgAttempts() {
   // onNodeDragStop
   const onNodeDragStop = useCallback(
     (event, node) => {
+      // In inspect mode, disable all drag actions
+      if (mode === 'inspect') return;
+
       playSnapSound();
       // ************** -> ADDED NOW 4: onNodeDragStop for group nodes ***************** :
       if (node.type === 'teamNode') {
@@ -1390,6 +1492,9 @@ export default function OrgAttempts() {
   // onConnect
   const onConnect = useCallback(
     (connection) => {
+      // Only allow connection creation in dependency mode
+      if (mode !== 'dependency') return;
+
       console.log('onConnect fired:', connection);
 
       const vortaktId = extractAttemptId(connection.source);
@@ -1424,7 +1529,7 @@ export default function OrgAttempts() {
       })();
       playWhipSound();
     },
-    [setEdges],
+    [mode, setEdges],
   );
 
   // handleDeleteSelectedDependency
@@ -1479,22 +1584,58 @@ export default function OrgAttempts() {
           <div style={{ height: SETTINGS_HEIGHT }} className="relative flex w-full flex-col gap-2">
             <div className="flex h-[40px] gap-2">
               <Button
-                className={` ${dep_setting_selected ? '!bg-gray-300' : '!bg-gray-500'} h-full w-full`}
-                onClick={() => setDep_setting_selected(false)}
+                className={` ${mode === 'order' ? '!bg-gray-500' : '!bg-gray-300'} h-full w-full`}
+                onClick={() => setMode('order')}
                 variant="contained"
               >
-                Change Group Display
+                Order Mode
               </Button>
 
               <Button
-                className={` ${dep_setting_selected ? '!bg-gray-500' : '!bg-gray-300'} h-full w-full`}
-                onClick={() => setDep_setting_selected(true)}
+                className={` ${mode === 'dependency' ? '!bg-gray-500' : '!bg-gray-300'} h-full w-full`}
+                onClick={() => setMode('dependency')}
                 variant="contained"
               >
-                Delete Dependencies
+                Dependency Mode
               </Button>
 
-              {/* <Button className="w-full h-full !bg-blue-300" variant="contained">Change Dependencies</Button> */}
+              <Button
+                className={` ${mode === 'inspect' ? '!bg-gray-500' : '!bg-gray-300'} h-full w-full`}
+                onClick={() => setMode('inspect')}
+                variant="contained"
+              >
+                Inspect Mode
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={collapseAllTeams}
+              >
+                Collapse All Teams
+              </Button>
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={expandAllTeams}
+              >
+                Expand All Teams
+              </Button>
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={collapseAllDays}
+              >
+                Collapse All Days
+              </Button>
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={expandAllDays}
+              >
+                Expand All Days
+              </Button>
             </div>
             <div className="mb-1">
               {selectedDepId && (
@@ -1518,6 +1659,29 @@ export default function OrgAttempts() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeDragStop={onNodeDragStop}
+              onNodeClick={(_, node) => {
+                console.log('Node clicked:', node?.id, 'Mode:', mode);
+                if (mode === 'inspect') {
+                  const newId = node?.id || null;
+                  console.log('Setting inspectSelectedNodeId to:', newId);
+                  setInspectSelectedNodeId(newId);
+                } else {
+                  setSelectedNodeId(node?.id || null);
+                  setSelectedEdgeId(null);
+                  setSelectedDepId(null);
+                }
+              }}
+              onPaneClick={() => {
+                console.log('Pane clicked, Mode:', mode);
+                if (mode === 'inspect') {
+                  console.log('Clearing inspectSelectedNodeId');
+                  setInspectSelectedNodeId(null);
+                } else {
+                  setSelectedNodeId(null);
+                  setSelectedEdgeId(null);
+                  setSelectedDepId(null);
+                }
+              }}
               elementsSelectable={true} // (default, but nice to be explicit)
               deleteKeyCode={['Delete', 'Backspace']}
               minZoom={1}
@@ -1538,6 +1702,10 @@ export default function OrgAttempts() {
                 [0, 0],
                 [componentWidth, y_reactflow_size],
               ]}
+              onSelectionChange={({ nodes }) => {
+                const first = nodes && nodes.length ? nodes[0] : null;
+                setSelectedNodeId(first ? first.id : null);
+              }}
             ></ReactFlow>
           </div>
         </div>
