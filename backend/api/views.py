@@ -270,11 +270,7 @@ class TaskExpandedSerializer(serializers.ModelSerializer):
 
 # user_has_project_access (HELPER)
 def user_has_project_access(user, project: Project) -> bool:
-    return (
-        project.owner_id == user.id
-        or project.members.filter(id=user.id).exists()
-    )
-
+    return project.owner == user or user in project.members.all()
 
 #List Projects
 @api_view(["GET"])
@@ -294,8 +290,89 @@ def list_projects(request):
     serializer = ProjectSerializer(projects, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+# NEW: list_all_projects
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_all_projects(request):
+    """
+    List ALL projects in the system, with info about user's relationship to each.
+    """
+    user = request.user
+    all_projects = Project.objects.all().order_by("-created_at")
+    
+    serializer = ProjectSerializer(all_projects, many=True)
+    data = serializer.data
+    
+    # Add membership info for each project
+    for project_data in data:
+        project = Project.objects.get(id=project_data['id'])
+        project_data['is_owner'] = project.owner == user
+        project_data['is_member'] = user in project.members.all()
+    
+    return Response(data, status=status.HTTP_200_OK)
 
-#create_project
+# NEW: join_project
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def join_project(request, pk):
+    """
+    Join a project as a member.
+    """
+    user = request.user
+    
+    try:
+        project = Project.objects.get(id=pk)
+    except Project.DoesNotExist:
+        return Response(
+            {"detail": "Project not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    
+    # Check if already a member or owner
+    if project.owner == user or user in project.members.all():
+        return Response(
+            {"detail": "Already a member or owner of this project."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+    # Add user as member
+    project.members.add(user)
+    
+    serializer = ProjectSerializer(project)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# NEW: leave_project
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def leave_project(request, pk):
+    """
+    Leave a project (remove self from members).
+    """
+    user = request.user
+    
+    try:
+        project = Project.objects.get(id=pk)
+    except Project.DoesNotExist:
+        return Response(
+            {"detail": "Project not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    
+    # Check if owner (can't leave own project)
+    if project.owner == user:
+        return Response(
+            {"detail": "Project owner cannot leave their own project."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    
+    # Remove from members
+    if user in project.members.all():
+        project.members.remove(user)
+    
+    serializer = ProjectSerializer(project)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# create_project
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_project(request):
@@ -333,14 +410,29 @@ def get_project(request, pk):
     Return one project if the user is owner or member.
     """
     user = request.user
-    project = get_object_or_404(
-        Project,
-        Q(id=pk) & (Q(owner=user) | Q(members=user))
-    )
-    serializer = ProjectSerializer(project)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-
+    
+    try:
+        project = (
+            Project.objects
+            .filter(Q(id=pk) & (Q(owner=user) | Q(members=user)))
+            .distinct()
+            .first()
+        )
+        
+        if not project:
+            return Response(
+                {"detail": "Project not found or access denied."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = ProjectSerializer(project)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"detail": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 # TODO ADDDEEEDD
 #delete_project
@@ -399,10 +491,6 @@ def update_project(request, pk):
     
     serializer = ProjectSerializer(project)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
-# ...existing code...
-
-
 
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________

@@ -15,11 +15,14 @@ urlpatterns = [
     
 
     #Projects
-    path('orgarhythmus/projects/', views.list_projects),   
-    path('orgarhythmus/projects/create/', views.create_project),   
+    path('orgarhythmus/projects/', views.list_projects),
+    path('orgarhythmus/projects/all/', views.list_all_projects),  # NEW
+    path('orgarhythmus/projects/create/', views.create_project),
     path("orgarhythmus/projects/<int:pk>/", views.get_project),
     path("orgarhythmus/projects/<int:pk>/update/", views.update_project),
-    path("orgarhythmus/projects/<int:pk>/delete/", views.delete_project),  
+    path("orgarhythmus/projects/<int:pk>/delete/", views.delete_project),
+    path("orgarhythmus/projects/<int:pk>/join/", views.join_project),  # NEW
+    path("orgarhythmus/projects/<int:pk>/leave/", views.leave_project),  # NEW
 
 
     #Teams

@@ -59,6 +59,45 @@ export async function fetch_all_projects() {
   return await res.json();
 }
 
+// NEW: fetch_all_projects_browsable
+export async function fetch_all_projects_browsable() {
+  const res = await authFetch('/api/orgarhythmus/projects/all/');
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch all projects');
+  }
+
+  return await res.json();
+}
+
+// NEW: join_project_api
+export async function join_project_api(projectId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/join/`, {
+    method: 'POST',
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to join project');
+  }
+
+  return await res.json();
+}
+
+// NEW: leave_project_api
+export async function leave_project_api(projectId) {
+  const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/leave/`, {
+    method: 'POST',
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to leave project');
+  }
+
+  return await res.json();
+}
+
 // create_project_api
 export async function create_project_api(name, description) {
   const token = localStorage.getItem('access_token');
@@ -117,8 +156,6 @@ export async function fetch_project_detail(projectId) {
   return await res.json();
 }
 
-
-
 // TODO ADDED
 // delete_project
 export async function delete_project(projectId) {
@@ -150,8 +187,6 @@ export async function update_project_api(projectId, data) {
 
   return await res.json();
 }
-
-
 
 //_______________________________________________
 //_______________________________________________
@@ -255,8 +290,6 @@ export async function reorder_project_teams(projectId, order) {
   }
 }
 
-
-
 // TODO ADDED Team
 // fetchSingleTeam
 export async function fetchSingleTeam(projectId, teamId) {
@@ -270,7 +303,6 @@ export async function fetchSingleTeam(projectId, teamId) {
 
   return await res.json();
 }
-
 
 // TODO ADDED Team
 // updateTeam
@@ -286,10 +318,6 @@ export async function updateTeam(projectId, teamId, payload) {
 
   return await res.json();
 }
-
-
-
-
 
 //_______________________________________________
 //_______________________________________________
@@ -341,8 +369,6 @@ export async function createTaskForProject(projectId, payload) {
   return await res.json();
 }
 
-// ...existing code...
-
 // fetchSingleTask
 export async function fetchSingleTask(projectId, taskId) {
   const res = await authFetch(`/api/orgarhythmus/projects/${projectId}/tasks/${taskId}/detail/`, {
@@ -355,7 +381,6 @@ export async function fetchSingleTask(projectId, taskId) {
 
   return await res.json();
 }
-
 
 // updateTask
 export async function updateTask(projectId, taskId, payload) {
@@ -370,8 +395,6 @@ export async function updateTask(projectId, taskId, payload) {
 
   return await res.json();
 }
-
-
 
 //_______________________________________________
 //_______________________________________________
