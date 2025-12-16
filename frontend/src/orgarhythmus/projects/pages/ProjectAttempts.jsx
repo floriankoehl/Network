@@ -538,8 +538,33 @@ export default function OrgAttempts() {
         entryCount,
         collapsedDays,
         pixelMap,
-        onToggleDay: (dayIndex) =>
-          setCollapsedDays((prev) => ({ ...prev, [dayIndex]: !prev[dayIndex] })),
+        onToggleDay: (dayIndex) => {
+          // Toggle a single day and only update attempts whose slotIndex is affected
+          setCollapsedDays((prev) => {
+            const next = { ...prev, [dayIndex]: !prev[dayIndex] };
+
+            // Recalculate positions only for attempts in slots after the toggled day
+            setAttemptNodes((prevAttempts) =>
+              prevAttempts.map((attempt) => {
+                const slotIndex = attempt.data?.slotIndex || 1;
+                if (slotIndex <= dayIndex) return attempt;
+
+                // Compute X using the updated collapse map without triggering full rerender
+                let x = TASK_SIDEBAR_WIDTH;
+                for (let i = 1; i < slotIndex; i++) {
+                  x += next[i] ? COLLAPSED_DAY_WIDTH : TASK_WIDTH;
+                }
+                return {
+                  ...attempt,
+                  position: { ...attempt.position, x },
+                  data: { ...attempt.data, collapsedDays: next },
+                };
+              }),
+            );
+
+            return next;
+          });
+        },
       },
     }),
     [componentWidth, timelineDays, entryCount, collapsedDays, pixelMap],
@@ -1074,23 +1099,8 @@ export default function OrgAttempts() {
     );
   }, [collapsedDays, pixelMap, componentWidth]);
 
-  // Update attempt nodes when collapsedDays changes
-  useEffect(() => {
-    setAttemptNodes((prevAttempts) =>
-      prevAttempts.map((attempt) => {
-        const slotIndex = attempt.data?.slotIndex || 1;
-        const newX = getXFromSlotIndex(slotIndex);
-        return {
-          ...attempt,
-          position: { ...attempt.position, x: newX },
-          data: {
-            ...attempt.data,
-            collapsedDays,
-          },
-        };
-      }),
-    );
-  }, [collapsedDays, getXFromSlotIndex]);
+  // Attempts no longer fully recompute on every collapsedDays change;
+  // we update selectively in onToggleDay above to reduce lag.
 
   // Merge Nodes
   useEffect(() => {
