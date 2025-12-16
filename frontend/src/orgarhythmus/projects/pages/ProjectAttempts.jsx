@@ -99,7 +99,7 @@ function get_overall_gap(num_tasks, gap, header_gap) {
 const isMobile = window.innerWidth <= 768;
 let TASK_HEIGHT = 60;
 let TASK_WIDTH = 60;
-let SETTINGS_HEIGHT = 120;
+let SETTINGS_HEIGHT = 170;
 const DEFAULT_ENTRIES = 25; // fallback if no dates
 
 let SIDEBAR_WIDTH = 80;
@@ -214,7 +214,8 @@ function TeamNode({ id, data }) {
 
   // ************** -> ADDED NOW 2: height calculation inside teamnode ***************** :
   // const [height, setHeight] = useState(data.height);
-  const height = data.isCollapsed ? TEAM_COLLAPSED_HEIGHT : data.height;
+  const collapsedHeight = data.collapsedHeight ?? TEAM_COLLAPSED_HEIGHT;
+  const height = data.isCollapsed ? collapsedHeight : data.height;
 
   // function handleCollapse() {
   //     if (!collapsed) {
@@ -365,7 +366,7 @@ function TaskNode({ data }) {
         >
           {!isTeamCollapsed && !isTaskCollapsed && <span>{data.label}</span>}
           {!isTeamCollapsed && isTaskCollapsed && (
-            <span className="flex-1 truncate pr-1 text-[7px] text-gray-600">{data.label}</span>
+            <span className="flex-1 truncate pr-1 pl-4 text-[7px] text-gray-600">{data.label}</span>
           )}
           {!isTeamCollapsed && (
             <button
@@ -720,6 +721,20 @@ export default function OrgAttempts() {
     });
   }, [groupNodes, taskNodes]);
 
+  const collapseAllTasks = useCallback(() => {
+    setCollapsedTasks(() => {
+      const next = {};
+      taskNodes.forEach((t) => {
+        next[t.id] = true;
+      });
+      return next;
+    });
+  }, [taskNodes]);
+
+  const expandAllTasks = useCallback(() => {
+    setCollapsedTasks({});
+  }, []);
+
   const collapseAllDays = useCallback(() => {
     setCollapsedDays(() => {
       const next = {};
@@ -728,10 +743,12 @@ export default function OrgAttempts() {
       }
       return next;
     });
+    setLayoutVersion((v) => v + 1);
   }, [entryCount]);
 
   const expandAllDays = useCallback(() => {
     setCollapsedDays({});
+    setLayoutVersion((v) => v + 1);
   }, []);
 
   // ************** -> ADDED NOW 3: Helper - getTaskIdsForTeam ***************** :
@@ -894,7 +911,7 @@ export default function OrgAttempts() {
         );
         return {
           ...a,
-          hidden: false,
+          hidden: isTaskCollapsed || isTeamCollapsed,
           data: {
             ...a.data,
             isTaskCollapsed,
@@ -907,25 +924,29 @@ export default function OrgAttempts() {
     // Update team heights based on current task collapse states
     const heightsByTeam = {};
     taskNodes.forEach((t) => {
-      const isTeamCollapsed = teamCollapsedSet.has(t.parentNode);
-      if (isTeamCollapsed) {
-        heightsByTeam[t.parentNode] = TEAM_COLLAPSED_HEIGHT;
-        return;
+      const teamId = t.parentNode;
+      if (!heightsByTeam[teamId]) {
+        heightsByTeam[teamId] = { expanded: 0, collapsed: 0 };
       }
-      const eff = collapsedTaskIds.has(t.id) ? TASK_COLLAPSED_HEIGHT : TASK_HEIGHT;
-      heightsByTeam[t.parentNode] = (heightsByTeam[t.parentNode] || 0) + eff;
+
+      heightsByTeam[teamId].collapsed += TASK_COLLAPSED_HEIGHT;
+      heightsByTeam[teamId].expanded += collapsedTaskIds.has(t.id)
+        ? TASK_COLLAPSED_HEIGHT
+        : TASK_HEIGHT;
     });
 
     setGroupNodes((prevTeams) =>
       prevTeams.map((team) => {
         const isCollapsed = teamCollapsedSet.has(team.id);
-        const expandedHeight = heightsByTeam[team.id] ?? 0;
-        const height = isCollapsed ? TEAM_COLLAPSED_HEIGHT : expandedHeight;
+        const expandedHeight = heightsByTeam[team.id]?.expanded ?? team.data?.height ?? 0;
+        const collapsedHeight = heightsByTeam[team.id]?.collapsed ?? TEAM_COLLAPSED_HEIGHT;
+        const height = isCollapsed ? collapsedHeight : expandedHeight;
         return {
           ...team,
           data: {
             ...team.data,
             height,
+            collapsedHeight,
             isCollapsed,
           },
         };
@@ -945,7 +966,8 @@ export default function OrgAttempts() {
       if (!node) continue;
 
       const expandedHeight = node.data?.height ?? 0;
-      const effectiveHeight = collapsedByTeamId[id] ? TEAM_COLLAPSED_HEIGHT : expandedHeight;
+      const collapsedHeight = node.data?.collapsedHeight ?? TEAM_COLLAPSED_HEIGHT;
+      const effectiveHeight = collapsedByTeamId[id] ? collapsedHeight : expandedHeight;
 
       const midY = currentY + effectiveHeight / 2;
 
@@ -1051,7 +1073,8 @@ export default function OrgAttempts() {
         const isCollapsed = !!collapsedByTeamId[node.id];
 
         const expandedHeight = node.data?.height ?? 0;
-        const effectiveHeight = isCollapsed ? TEAM_COLLAPSED_HEIGHT : expandedHeight;
+        const collapsedHeight = node.data?.collapsedHeight ?? TEAM_COLLAPSED_HEIGHT;
+        const effectiveHeight = isCollapsed ? collapsedHeight : expandedHeight;
 
         console.log(
           '[LAYOUT PASS] team:',
@@ -1856,7 +1879,7 @@ export default function OrgAttempts() {
                 Inspect Mode
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
               <Button
                 className="!bg-slate-200 !text-black"
                 variant="contained"
@@ -1870,6 +1893,20 @@ export default function OrgAttempts() {
                 onClick={expandAllTeams}
               >
                 Expand All Teams
+              </Button>
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={collapseAllTasks}
+              >
+                Collapse All Tasks
+              </Button>
+              <Button
+                className="!bg-slate-200 !text-black"
+                variant="contained"
+                onClick={expandAllTasks}
+              >
+                Expand All Tasks
               </Button>
               <Button
                 className="!bg-slate-200 !text-black"
