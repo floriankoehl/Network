@@ -19,7 +19,7 @@ import {
 } from '../../api/org_API';
 import snapSoundFile from '../../../assets/snap.mp3';
 import whipSoundFile from '../../../assets/whip.mp3';
-import clackSoundFile from '../../../assets/pen_down.mp3';
+import clackSoundFile from '../../../assets/clack.mp3';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../../auth/AuthContext';
 import { ChevronsDownUp } from 'lucide-react';
@@ -110,8 +110,9 @@ const TASK_GAP_PADDING_X = 0;
 const HEADER_BODY_GAP = 10;
 
 // ************** -> ADDED NOW 2: const TEAM_COLLAPSED_HEIGHT ***************** :
-const TEAM_COLLAPSED_HEIGHT = 20;
-const TASK_COLLAPSED_HEIGHT = 8;
+const TASK_COLLAPSED_HEIGHT = 14;
+const TEAM_COLLAPSED_HEIGHT = TASK_COLLAPSED_HEIGHT + 15; // slightly larger to fit header/arrow
+const ATTEMPT_COLLAPSED_HEIGHT = Math.max(6, TASK_COLLAPSED_HEIGHT - 4);
 const COLLAPSED_DAY_WIDTH = 12;
 
 // Mobile Task Adjustment
@@ -330,8 +331,21 @@ function TeamNode({ id, data }) {
 
 // TaskNode
 function TaskNode({ data }) {
-  const { pixelMap = {}, componentWidth, collapsedDays = {}, isTeamCollapsed = false } = data || {};
-  const taskHeight = isTeamCollapsed ? TASK_COLLAPSED_HEIGHT : TASK_HEIGHT;
+  const {
+    pixelMap = {},
+    componentWidth,
+    collapsedDays = {},
+    isTeamCollapsed = false,
+    isTaskCollapsed = false,
+    onToggleTask,
+    taskId,
+  } = data || {};
+
+  const taskHeight = isTeamCollapsed
+    ? TASK_COLLAPSED_HEIGHT
+    : isTaskCollapsed
+      ? TASK_COLLAPSED_HEIGHT
+      : TASK_HEIGHT;
 
   return (
     <div
@@ -342,7 +356,35 @@ function TaskNode({ data }) {
         style={{ width: TASK_SIDEBAR_WIDTH }}
         className="flex h-full items-center justify-center border-r bg-white/20 text-xs tracking-wide text-black"
       >
-        {!isTeamCollapsed && data.label}
+        <div
+          className="relative flex w-full items-center justify-between px-2"
+          style={{ pointerEvents: 'auto' }}
+        >
+          {!isTeamCollapsed && !isTaskCollapsed && <span>{data.label}</span>}
+          {!isTeamCollapsed && isTaskCollapsed && (
+            <span className="flex-1 truncate pr-1 text-[7px] text-gray-600">{data.label}</span>
+          )}
+          {!isTeamCollapsed && (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleTask?.(taskId);
+              }}
+              className={`absolute top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center text-[10px] text-black ${
+                isTaskCollapsed ? 'left-0' : 'right-0'
+              }`}
+              aria-label="Toggle task"
+              style={{
+                background: 'transparent',
+                border: 'none',
+              }}
+            >
+              {isTaskCollapsed ? '▶' : '▼'}
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex h-full flex-1" style={{ pointerEvents: 'none' }}>
         {Object.entries(pixelMap).map(([index, range]) => {
@@ -370,19 +412,22 @@ function AttemptNode({ data, selected }) {
   const slotIndex = data.slotIndex || 1;
   const collapsedDays = data.collapsedDays || {};
   const isTeamCollapsed = data.isTeamCollapsed || false;
+  const isTaskCollapsed = data.isTaskCollapsed || false;
   const isDayCollapsed = !!collapsedDays[slotIndex];
-  const isCollapsed = isDayCollapsed || isTeamCollapsed;
+  const isCollapsed = isDayCollapsed || isTeamCollapsed || isTaskCollapsed;
 
   const attemptWidth = isDayCollapsed ? COLLAPSED_DAY_WIDTH - 4 : TASK_WIDTH - 15;
-  const attemptHeight = isTeamCollapsed
-    ? 4
-    : isDayCollapsed
-      ? COLLAPSED_DAY_WIDTH - 4
-      : TASK_HEIGHT - 15;
+  const attemptHeight =
+    isTeamCollapsed || isTaskCollapsed
+      ? ATTEMPT_COLLAPSED_HEIGHT
+      : isDayCollapsed
+        ? COLLAPSED_DAY_WIDTH - 4
+        : TASK_HEIGHT - 15;
+  const collapsedMargin = isTeamCollapsed || isTaskCollapsed ? 'mx-2 my-[1px]' : 'm-2';
 
   return (
     <div
-      className={`m-2 flex items-center justify-center rounded-md border bg-gray-100 text-xs !text-[15px] font-bold text-black shadow-sm shadow-xl shadow-black/2 transition-all duration-150 hover:bg-gray-700 hover:text-white ${selected ? 'scale-105 border-sky-500 shadow-md shadow-black/30' : 'border-slate-300'} ${data.shake ? 'animate-pulse' : ''}`}
+      className={`${collapsedMargin} flex items-center justify-center rounded-md border bg-gray-100 text-xs !text-[15px] font-bold text-black shadow-sm shadow-xl shadow-black/2 transition-all duration-150 hover:bg-gray-700 hover:text-white ${selected ? 'scale-105 border-sky-500 shadow-md shadow-black/30' : 'border-slate-300'} ${data.shake ? 'animate-pulse' : ''}`}
       style={{
         width: attemptWidth,
         height: attemptHeight,
@@ -458,6 +503,7 @@ export default function OrgAttempts() {
 
   // Collapsed days map: key = day index (1-based), value = true/false
   const [collapsedDays, setCollapsedDays] = useState({});
+  const [layoutVersion, setLayoutVersion] = useState(0);
 
   // Timeline derived from project dates
   const [timelineDays, setTimelineDays] = useState([]);
@@ -575,25 +621,47 @@ export default function OrgAttempts() {
 
   // ************** -> ADDED NOW : collapsedByTeamId ***************** :
   const [collapsedByTeamId, setCollapsedByTeamId] = useState({});
+  const [collapsedTasks, setCollapsedTasks] = useState({});
 
   // ************** -> ADDED NOW 4: teamOrder useState ***************** :
   const [teamOrder, setTeamOrder] = useState([]);
 
   // ************** -> ADDED NOW: toggleTeamCollapse ***************** :
-  const toggleTeamCollapse = useCallback((teamNodeId) => {
-    console.log('[toggleTeamCollapse] called for:', teamNodeId);
+  const toggleTeamCollapse = useCallback(
+    (teamNodeId) => {
+      // Ensure expanding a team also expands all its tasks
+      const tasksInTeam = taskNodes.filter((t) => t.parentNode === teamNodeId).map((t) => t.id);
 
-    setCollapsedByTeamId((prev) => {
-      const next = {
-        ...prev,
-        [teamNodeId]: !prev[teamNodeId],
-      };
+      setCollapsedByTeamId((prev) => {
+        const wasCollapsed = !!prev[teamNodeId];
+        const nextCollapsed = !wasCollapsed;
 
-      console.log('[toggleTeamCollapse] prev:', prev);
-      console.log('[toggleTeamCollapse] next:', next);
+        if (wasCollapsed && !nextCollapsed) {
+          // We are expanding the team: expand all tasks inside it
+          setCollapsedTasks((prevTasks) => {
+            const nextTasks = { ...prevTasks };
+            tasksInTeam.forEach((tid) => {
+              if (nextTasks[tid]) nextTasks[tid] = false;
+            });
+            return nextTasks;
+          });
+        }
 
-      return next;
-    });
+        return {
+          ...prev,
+          [teamNodeId]: nextCollapsed,
+        };
+      });
+    },
+    [taskNodes],
+  );
+
+  const toggleTaskCollapse = useCallback((taskNodeId) => {
+    console.log('[toggleTaskCollapse] called for:', taskNodeId);
+    setCollapsedTasks((prev) => ({
+      ...prev,
+      [taskNodeId]: !prev[taskNodeId],
+    }));
   }, []);
 
   // ************** -> ADDED NOW 3: Helper - getTaskIdsForTeam ***************** :
@@ -641,85 +709,161 @@ export default function OrgAttempts() {
 
   //     console.log("==========[HIDE PASS] END==========");
   // }, [collapsedByTeamId, groupNodes.length]);
-  // Update task and attempt nodes when team collapse state changes
+  // Recalculate and update task positions based on all collapse states
   useEffect(() => {
-    if (!groupNodes.length) return;
+    if (!taskNodes.length) return;
 
-    console.log('==========[COLLAPSE SYNC] START==========');
-    console.log('[COLLAPSE SYNC] collapsedByTeamId:', collapsedByTeamId);
+    const collapsedTaskIds = new Set(Object.keys(collapsedTasks).filter((k) => collapsedTasks[k]));
+    const teamCollapsedSet = new Set(
+      Object.keys(collapsedByTeamId).filter((k) => collapsedByTeamId[k]),
+    );
 
-    const collapsedTeamIds = Object.keys(collapsedByTeamId).filter((k) => collapsedByTeamId[k]);
-    console.log('[COLLAPSE SYNC] collapsedTeamIds:', collapsedTeamIds);
-
-    // Update task nodes with collapse state FIRST, then use that to update teams
     setTaskNodes((prevTasks) => {
-      const collapsedTaskParents = new Set(collapsedTeamIds);
-
-      // Count tasks per team for height calculation
-      const taskCountByTeam = {};
-      prevTasks.forEach((t) => {
-        taskCountByTeam[t.parentNode] = (taskCountByTeam[t.parentNode] || 0) + 1;
+      const byTeam = {};
+      const taskIndexInTeam = {};
+      prevTasks.forEach((t, idx) => {
+        if (!byTeam[t.parentNode]) byTeam[t.parentNode] = [];
+        taskIndexInTeam[t.id] = byTeam[t.parentNode].length;
+        byTeam[t.parentNode].push(t);
       });
 
-      // Update team nodes' data.height - ALWAYS store EXPANDED height
-      setGroupNodes((prevTeams) =>
-        prevTeams.map((team) => {
-          const tasksInTeam = taskCountByTeam[team.id] || 0;
-          // Always calculate and store the EXPANDED height, regardless of collapse state
-          const expandedHeight = tasksInTeam * TASK_HEIGHT;
+      const positionMap = {};
+      Object.entries(byTeam).forEach(([teamId, list]) => {
+        const isTeamCollapsed = teamCollapsedSet.has(teamId);
+        // Use stable task order (order in list) instead of sorting by stale Y position
+        let currentY = 0;
+        list.forEach((t) => {
+          const isTaskCollapsed = collapsedTaskIds.has(t.id);
+          const eff = isTeamCollapsed
+            ? TASK_COLLAPSED_HEIGHT
+            : isTaskCollapsed
+              ? TASK_COLLAPSED_HEIGHT
+              : TASK_HEIGHT;
+          positionMap[t.id] = currentY;
+          currentY += eff;
+        });
+      });
 
-          return {
-            ...team,
-            data: {
-              ...team.data,
-              height: expandedHeight, // Store expanded height so LAYOUT PASS can use it
-            },
-          };
-        }),
-      );
-
-      // Collect task IDs that belong to collapsed teams
-      const tasksInCollapsedTeams = new Set(
-        prevTasks.filter((t) => collapsedTaskParents.has(t.parentNode)).map((t) => t.id),
-      );
-
-      console.log('[COLLAPSE SYNC] tasksInCollapsedTeams:', Array.from(tasksInCollapsedTeams));
-
-      // Update attempts with collapse state (nested to ensure atomic update)
-      setAttemptNodes((prevAttempts) =>
-        prevAttempts.map((a) => ({
-          ...a,
-          data: {
-            ...a.data,
-            isTeamCollapsed: tasksInCollapsedTeams.has(a.parentNode),
-          },
-        })),
-      );
-
-      // Update task positions based on collapse state
       return prevTasks.map((t) => {
-        const isTeamCollapsed = collapsedTaskParents.has(t.parentNode);
-
-        // Recalculate Y position within parent team
-        const siblingTasks = prevTasks.filter(
-          (sibling) => sibling.parentNode === t.parentNode && sibling.id <= t.id,
-        );
-        const taskIndex = siblingTasks.length - 1;
-        const newY = taskIndex * (isTeamCollapsed ? TASK_COLLAPSED_HEIGHT : TASK_HEIGHT);
-
+        const isTaskCollapsed = collapsedTaskIds.has(t.id);
+        const isTeamCollapsed = teamCollapsedSet.has(t.parentNode);
+        const newY = positionMap[t.id] ?? t.position.y;
         return {
           ...t,
           position: { ...t.position, y: newY },
           data: {
             ...t.data,
             isTeamCollapsed,
+            isTaskCollapsed,
           },
         };
       });
     });
+  }, [collapsedTasks, collapsedByTeamId, collapsedDays]);
 
-    console.log('==========[COLLAPSE SYNC] END==========');
-  }, [collapsedByTeamId, groupNodes.length]);
+  // When days are toggled, force a complete task position recalculation
+  useEffect(() => {
+    if (!taskNodes.length) return;
+
+    const collapsedTaskIds = new Set(Object.keys(collapsedTasks).filter((k) => collapsedTasks[k]));
+    const teamCollapsedSet = new Set(
+      Object.keys(collapsedByTeamId).filter((k) => collapsedByTeamId[k]),
+    );
+
+    setTaskNodes((prevTasks) => {
+      const byTeam = {};
+      prevTasks.forEach((t) => {
+        if (!byTeam[t.parentNode]) byTeam[t.parentNode] = [];
+        byTeam[t.parentNode].push(t);
+      });
+
+      const positionMap = {};
+      Object.entries(byTeam).forEach(([teamId, list]) => {
+        const isTeamCollapsed = teamCollapsedSet.has(teamId);
+        let currentY = 0;
+        list.forEach((t) => {
+          const isTaskCollapsed = collapsedTaskIds.has(t.id);
+          const eff = isTeamCollapsed
+            ? TASK_COLLAPSED_HEIGHT
+            : isTaskCollapsed
+              ? TASK_COLLAPSED_HEIGHT
+              : TASK_HEIGHT;
+          positionMap[t.id] = currentY;
+          currentY += eff;
+        });
+      });
+
+      return prevTasks.map((t) => {
+        const newY = positionMap[t.id];
+        if (newY !== t.position.y) {
+          return {
+            ...t,
+            position: { ...t.position, y: newY },
+          };
+        }
+        return t;
+      });
+    });
+  }, [collapsedDays, taskNodes.length]);
+
+  // Update attempt flags and team heights after task positions are recalculated
+  useEffect(() => {
+    if (!taskNodes.length || !groupNodes.length) return;
+
+    const collapsedTaskIds = new Set(Object.keys(collapsedTasks).filter((k) => collapsedTasks[k]));
+    const teamCollapsedSet = new Set(
+      Object.keys(collapsedByTeamId).filter((k) => collapsedByTeamId[k]),
+    );
+
+    // Update attempts with correct collapse flags
+    setAttemptNodes((prevAttempts) =>
+      prevAttempts.map((a) => {
+        const isTaskCollapsed = collapsedTaskIds.has(a.parentNode);
+        const isTeamCollapsed = teamCollapsedSet.has(
+          taskNodes.find((t) => t.id === a.parentNode)?.parentNode,
+        );
+        return {
+          ...a,
+          hidden: false,
+          data: {
+            ...a.data,
+            isTaskCollapsed,
+            isTeamCollapsed,
+          },
+        };
+      }),
+    );
+
+    // Update team heights based on current task collapse states
+    const heightsByTeam = {};
+    taskNodes.forEach((t) => {
+      const isTeamCollapsed = teamCollapsedSet.has(t.parentNode);
+      if (isTeamCollapsed) {
+        heightsByTeam[t.parentNode] = TEAM_COLLAPSED_HEIGHT;
+        return;
+      }
+      const eff = collapsedTaskIds.has(t.id) ? TASK_COLLAPSED_HEIGHT : TASK_HEIGHT;
+      heightsByTeam[t.parentNode] = (heightsByTeam[t.parentNode] || 0) + eff;
+    });
+
+    setGroupNodes((prevTeams) =>
+      prevTeams.map((team) => {
+        const isCollapsed = teamCollapsedSet.has(team.id);
+        const expandedHeight = heightsByTeam[team.id] ?? 0;
+        const height = isCollapsed ? TEAM_COLLAPSED_HEIGHT : expandedHeight;
+        return {
+          ...team,
+          data: {
+            ...team.data,
+            height,
+            isCollapsed,
+          },
+        };
+      }),
+    );
+
+    setLayoutVersion((v) => v + 1);
+  }, [taskNodes, collapsedTasks, collapsedByTeamId, collapsedDays]);
 
   // ************** -> ADDED NOW 4: Helper: getTeamInsertIndexFromY ***************** :
   function getTeamInsertIndexFromY(dropY, orderedTeamIds, groupNodes, collapsedByTeamId) {
@@ -865,7 +1009,7 @@ export default function OrgAttempts() {
       console.log('==========[LAYOUT PASS] END==========');
       return next;
     });
-  }, [collapsedByTeamId, teamOrder, groupNodes.length]);
+  }, [collapsedByTeamId, teamOrder, layoutVersion, groupNodes.length]);
 
   useEffect(() => {
     // Mode toggle: when dep_setting_selected is true, we’re in dependency mode -> disable dragging to favor edge selection
@@ -878,7 +1022,7 @@ export default function OrgAttempts() {
         draggable: draggingEnabled,
       })),
     );
-  }, [dep_setting_selected, collapsedDays, groupNodes.length]);
+  }, [dep_setting_selected, collapsedDays, collapsedTasks, groupNodes.length]);
 
   // __________LOAD DATA
   useEffect(() => {
@@ -1005,6 +1149,9 @@ export default function OrgAttempts() {
                 pixelMap,
                 collapsedDays,
                 isTeamCollapsed,
+                isTaskCollapsed: !!collapsedTasks[`task-${task.id}`],
+                taskId: `task-${task.id}`,
+                onToggleTask: toggleTaskCollapse,
                 // you can pass more here:
                 // width: ..., color: ..., etc.
               },
@@ -1040,10 +1187,11 @@ export default function OrgAttempts() {
         const updated_attempt_nodes = all_attempts.map((attempt, index) => {
           const x = getXFromSlotIndex(attempt.slot_index); // 👈 use DB value, default inside helper
 
-          // Check if parent task's team is collapsed
+          // Check if parent task's team/task is collapsed
           const taskNodeId = `task-${attempt.task.id}`;
           const taskNode = taskNodes.find((t) => t.id === taskNodeId);
           const isTeamCollapsed = taskNode?.data?.isTeamCollapsed || false;
+          const isTaskCollapsed = !!collapsedTasks[taskNodeId];
 
           return {
             id: `attempt-${attempt.id}`,
@@ -1057,6 +1205,7 @@ export default function OrgAttempts() {
               slotIndex: attempt.slot_index,
               collapsedDays,
               isTeamCollapsed,
+              isTaskCollapsed,
             },
           };
         });
