@@ -7,6 +7,7 @@ import ReactFlow, {
   Handle,
   Position,
 } from 'reactflow';
+import { EdgeLabelRenderer, getBezierPath } from 'reactflow';
 import {
   fetch_all_attempts,
   project_teams_expanded,
@@ -60,7 +61,7 @@ function playSnapSound() {
     snapAudio.currentTime = 0;
     snapAudio.play();
   } catch (e) {
-    console.log('Couldnt play snap sound');
+    // console.log('Couldnt play snap sound');
   }
 }
 
@@ -73,7 +74,7 @@ function playWhipSound() {
     whipAudio.currentTime = 0;
     whipAudio.play();
   } catch (e) {
-    console.log('Couldnt play whip sound');
+    // console.log('Couldnt play whip sound');
   }
 }
 
@@ -86,7 +87,7 @@ function playClackSound() {
     clickAudio.currentTime = 0;
     clickAudio.play();
   } catch (e) {
-    console.log('Couldnt play whip sound');
+    // console.log('Couldnt play whip sound');
   }
 }
 
@@ -99,7 +100,7 @@ function get_overall_gap(num_tasks, gap, header_gap) {
 const isMobile = window.innerWidth <= 768;
 let TASK_HEIGHT = 60;
 let TASK_WIDTH = 60;
-let SETTINGS_HEIGHT = 170;
+let SETTINGS_HEIGHT = 200;
 const DEFAULT_ENTRIES = 25; // fallback if no dates
 
 let SIDEBAR_WIDTH = 80;
@@ -208,7 +209,7 @@ function TaskHeaderNode({ data }) {
 // TeamNode
 function TeamNode({ id, data }) {
   // ************** -> ADDED NOW: DEBUG [TeamNode render] ***************** :
-  console.log('[TeamNode render]', id, 'data.isCollapsed =', data.isCollapsed);
+  // console.log('[TeamNode render]', id, 'data.isCollapsed =', data.isCollapsed);
 
   const [collapsed, setCollapsed] = useState(false);
 
@@ -319,7 +320,7 @@ function TeamNode({ id, data }) {
             // handleCollapse();
             // playClackSound()
             e.stopPropagation();
-            console.log('[TeamNode] click collapse:', id, 'isCollapsed(data):', data.isCollapsed);
+            // console.log('[TeamNode] click collapse:', id, 'isCollapsed(data):', data.isCollapsed);
             data.toggleTeamCollapse(id);
           }}
         >
@@ -328,7 +329,7 @@ function TeamNode({ id, data }) {
       </div>
 
       {/* Right area – allow clicking edges through; keep left bar interactive */}
-      <div className="relative flex-1 p-2" style={{ pointerEvents: 'none' }} />
+      <div className="relative flex-1 p-2" />
     </div>
   );
 }
@@ -360,10 +361,7 @@ function TaskNode({ data }) {
         style={{ width: TASK_SIDEBAR_WIDTH }}
         className="flex h-full items-center justify-center border-r bg-white/20 text-xs tracking-wide text-black"
       >
-        <div
-          className="relative flex w-full items-center justify-between px-2"
-          style={{ pointerEvents: 'auto' }}
-        >
+        <div className="relative flex w-full items-center justify-between px-2">
           {!isTeamCollapsed && !isTaskCollapsed && <span>{data.label}</span>}
           {!isTeamCollapsed && isTaskCollapsed && (
             <span className="flex-1 truncate pr-1 pl-4 text-[7px] text-gray-600">{data.label}</span>
@@ -390,7 +388,7 @@ function TaskNode({ data }) {
           )}
         </div>
       </div>
-      <div className="flex h-full flex-1" style={{ pointerEvents: 'none' }}>
+      <div className="flex h-full flex-1">
         {Object.entries(pixelMap).map(([index, range]) => {
           const isCollapsed = !!collapsedDays[Number(index)];
           return (
@@ -431,6 +429,9 @@ function AttemptNode({ data, selected }) {
 
   return (
     <div
+      onClick={(e) => {
+        console.log('[DEBUG AttemptNode CLICK]', data.number, 'target:', e.target);
+      }}
       className={`${collapsedMargin} flex items-center justify-center rounded-md border bg-gray-100 text-xs !text-[15px] font-bold text-black shadow-sm shadow-xl shadow-black/2 transition-all duration-150 hover:bg-gray-700 hover:text-white ${selected ? 'scale-105 border-sky-500 shadow-md shadow-black/30' : 'border-slate-300'} ${data.shake ? 'animate-pulse' : ''}`}
       style={{
         width: attemptWidth,
@@ -468,6 +469,103 @@ function AttemptNode({ data, selected }) {
 
 // __________NODE TYPES
 
+// Custom dependency edge with generous invisible hit-path for reliable clicks
+function DependencyEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  selected,
+  style,
+  data,
+}) {
+  const sx = sourceX ?? 0;
+  const sy = sourceY ?? 0;
+  const tx = targetX ?? 0;
+  const ty = targetY ?? 0;
+  const dx = Math.max(40, Math.abs(tx - sx) / 2);
+  const c1x = sx + dx;
+  const c1y = sy;
+  const c2x = tx - dx;
+  const c2y = ty;
+  const path = `M ${sx},${sy} C ${c1x},${c1y} ${c2x},${c2y} ${tx},${ty}`;
+
+  const stroke = (style && style.stroke) || '#222';
+  const strokeWidth = (style && style.strokeWidth) || 2;
+
+  // Compute a good label position along the curve
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX: sx,
+    sourceY: sy,
+    sourcePosition,
+    targetX: tx,
+    targetY: ty,
+    targetPosition,
+  });
+
+  return (
+    <g className="react-flow__edge">
+      <path
+        className="react-flow__edge-path"
+        d={path}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        style={{ pointerEvents: 'stroke', ...(style || {}) }}
+      />
+      {/* Invisible, thick interaction path to capture clicks */}
+      <path
+        className="react-flow__edge-path edge-hit"
+        d={path}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={Math.max(24, strokeWidth * 8)}
+        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+        onClick={(e) => {
+          e.stopPropagation?.();
+          if (data && typeof data.onSelect === 'function') {
+            data.onSelect(id);
+          }
+        }}
+      />
+      {/* Small clickable label anchored to the edge */}
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            pointerEvents: 'all',
+            zIndex: 1000,
+          }}
+          className="edge-label"
+          onClick={(e) => {
+            e.stopPropagation?.();
+            if (data && typeof data.onSelect === 'function') {
+              data.onSelect(id);
+            }
+          }}
+        >
+          <div
+            title="Select dependency"
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 8,
+              background: selected ? '#ef4444' : '#64748b',
+              border: '1px solid #fff',
+              boxShadow: '0 0 4px rgba(0,0,0,0.25)',
+              cursor: 'pointer',
+            }}
+          />
+        </div>
+      </EdgeLabelRenderer>
+    </g>
+  );
+}
+
 // nodeTypes
 const nodeTypes = {
   teamNode: TeamNode,
@@ -476,11 +574,16 @@ const nodeTypes = {
   taskHeaderNode: TaskHeaderNode,
 };
 
+// edgeTypes
+const edgeTypes = {
+  dependencyEdge: DependencyEdge,
+};
+
 // headerNode template removed; we’ll build it inside the component with data
 
 // ________________________COMPONENT________________________
 export default function OrgAttempts() {
-  console.log('________________________________\n');
+  // console.log('________________________________\n');
 
   // States & Variables
   const { projectId } = useParams();
@@ -510,11 +613,29 @@ export default function OrgAttempts() {
 
   // View options
   const [hideCollapsedNodes, setHideCollapsedNodes] = useState(false);
-  const [hideEdgesOfCollapsed, setHideEdgesOfCollapsed] = useState(false);
+  // TEMP: hideEdgesOfCollapsed disabled during investigation
+  // const [hideEdgesOfCollapsed, setHideEdgesOfCollapsed] = useState(false);
   const [hideEmptyDays, setHideEmptyDays] = useState(false);
 
   // Error message state
   const [errorMessage, setErrorMessage] = useState(null);
+  const edgeHighlightTimeout = useRef(null);
+  const edgeRestoreRef = useRef(null);
+
+  // Ensure dependency edges set selection when clicked from custom edge component
+  const handleEdgeSelect = useCallback(
+    (edgeId) => {
+      if (!edgeId) return;
+      if (edgeId.startsWith('attemptdep-')) {
+        const depId = parseInt(edgeId.replace('attemptdep-', ''), 10);
+        if (!Number.isNaN(depId)) {
+          setSelectedDepId(depId);
+          setSelectedEdgeId(edgeId);
+        }
+      }
+    },
+    [setSelectedDepId, setSelectedEdgeId],
+  );
 
   // Collapsed days map: key = day index (1-based), value = true/false
   const [collapsedDays, setCollapsedDays] = useState({});
@@ -683,7 +804,7 @@ export default function OrgAttempts() {
   );
 
   const toggleTaskCollapse = useCallback((taskNodeId) => {
-    console.log('[toggleTaskCollapse] called for:', taskNodeId);
+    // console.log('[toggleTaskCollapse] called for:', taskNodeId);
     setCollapsedTasks((prev) => ({
       ...prev,
       [taskNodeId]: !prev[taskNodeId],
@@ -971,18 +1092,18 @@ export default function OrgAttempts() {
 
       const midY = currentY + effectiveHeight / 2;
 
-      console.log(
-        '[REORDER CHECK]',
-        id,
-        'range:',
-        currentY,
-        '→',
-        currentY + effectiveHeight,
-        'mid:',
-        midY,
-        'dropY:',
-        dropY,
-      );
+      // console.log(
+      //   '[REORDER CHECK]',
+      //   id,
+      //   'range:',
+      //   currentY,
+      //   '→',
+      //   currentY + effectiveHeight,
+      //   'mid:',
+      //   midY,
+      //   'dropY:',
+      //   dropY,
+      // );
 
       if (dropY < midY) {
         return i;
@@ -1047,9 +1168,9 @@ export default function OrgAttempts() {
     if (!groupNodes.length) return;
     if (!teamOrder.length) return;
 
-    console.log('==========[LAYOUT PASS] START==========');
-    console.log('[LAYOUT PASS] teamOrder:', teamOrder);
-    console.log('[LAYOUT PASS] collapsedByTeamId:', collapsedByTeamId);
+    // console.log('==========[LAYOUT PASS] START==========');
+    // console.log('[LAYOUT PASS] teamOrder:', teamOrder);
+    // console.log('[LAYOUT PASS] collapsedByTeamId:', collapsedByTeamId);
 
     setGroupNodes((prev) => {
       // map nodes by id for fast lookup
@@ -1061,10 +1182,10 @@ export default function OrgAttempts() {
       // append any “new/untracked” teams that aren’t in teamOrder yet (safety)
       const extras = prev.filter((n) => !teamOrder.includes(n.id));
       if (extras.length) {
-        console.log(
-          '[LAYOUT PASS] extras not in teamOrder:',
-          extras.map((e) => e.id),
-        );
+        // console.log(
+        //   '[LAYOUT PASS] extras not in teamOrder:',
+        //   extras.map((e) => e.id),
+        // );
       }
 
       let currentY = TASK_HEIGHT + HEADER_BODY_GAP;
@@ -1076,18 +1197,18 @@ export default function OrgAttempts() {
         const collapsedHeight = node.data?.collapsedHeight ?? TEAM_COLLAPSED_HEIGHT;
         const effectiveHeight = isCollapsed ? collapsedHeight : expandedHeight;
 
-        console.log(
-          '[LAYOUT PASS] team:',
-          node.id,
-          'collapsed:',
-          isCollapsed,
-          'expandedHeight:',
-          expandedHeight,
-          'effectiveHeight:',
-          effectiveHeight,
-          'newY:',
-          currentY,
-        );
+        // console.log(
+        //   '[LAYOUT PASS] team:',
+        //   node.id,
+        //   'collapsed:',
+        //   isCollapsed,
+        //   'expandedHeight:',
+        //   expandedHeight,
+        //   'effectiveHeight:',
+        //   effectiveHeight,
+        //   'newY:',
+        //   currentY,
+        // );
 
         const updated = {
           ...node,
@@ -1099,23 +1220,65 @@ export default function OrgAttempts() {
         return updated;
       });
 
-      console.log('==========[LAYOUT PASS] END==========');
+      // console.log('==========[LAYOUT PASS] END==========');
       return next;
     });
   }, [collapsedByTeamId, teamOrder, layoutVersion, groupNodes.length]);
 
+  const applyTeamInteractivity = useCallback(
+    (currentMode) => {
+      const draggingEnabled = currentMode === 'order';
+      const selectableEnabled = currentMode === 'order';
+      console.log(
+        '[TEAM INTERACTIVITY] mode:',
+        currentMode,
+        'draggable:',
+        draggingEnabled,
+        'selectable:',
+        selectableEnabled,
+      );
+      setGroupNodes((nodes) =>
+        nodes.map((node) => ({
+          ...node,
+          selectable: selectableEnabled,
+          draggable: draggingEnabled,
+        })),
+      );
+    },
+    [setGroupNodes],
+  );
+
   useEffect(() => {
-    // Mode toggle: when dep_setting_selected is true, we’re in dependency mode -> disable dragging to favor edge selection
-    // When false (Change Group Display), enable dragging for team reorder; keep selectable false to avoid edge overlay issues
-    const draggingEnabled = mode === 'order';
-    setGroupNodes((nodes) =>
-      nodes.map((node) => ({
-        ...node,
-        selectable: false,
-        draggable: draggingEnabled,
-      })),
-    );
-  }, [mode, collapsedDays, collapsedTasks, groupNodes.length]);
+    applyTeamInteractivity(mode);
+  }, [mode, applyTeamInteractivity]);
+
+  // Apply task interactivity based on mode
+  const applyTaskInteractivity = useCallback(
+    (currentMode) => {
+      const draggingEnabled = currentMode === 'order';
+      const selectableEnabled = currentMode === 'order';
+      console.log(
+        '[TASK INTERACTIVITY] mode:',
+        currentMode,
+        'draggable:',
+        draggingEnabled,
+        'selectable:',
+        selectableEnabled,
+      );
+      setTaskNodes((nodes) =>
+        nodes.map((node) => ({
+          ...node,
+          selectable: selectableEnabled,
+          draggable: draggingEnabled,
+        })),
+      );
+    },
+    [setTaskNodes],
+  );
+
+  useEffect(() => {
+    applyTaskInteractivity(mode);
+  }, [mode, applyTaskInteractivity]);
 
   // Update attempt nodes draggable state based on mode
   useEffect(() => {
@@ -1165,45 +1328,99 @@ export default function OrgAttempts() {
     );
   }, [mode, inspectSelectedNodeId]);
 
-  // Filter edges based on hideEdgesOfCollapsed option
-  useEffect(() => {
-    setEdges((prev) =>
-      prev.map((edge) => {
-        if (!hideEdgesOfCollapsed) {
-          // When disabled, ensure edge is visible
-          if (edge.hidden) {
-            return { ...edge, hidden: false };
-          }
-          return edge;
-        }
+  /*
+   * TEMPORARILY DISABLED: hideEdgesOfCollapsed effect
+   * Reason: Investigating edge click issues in dependency mode. Hiding edges here can
+   *         interfere with click hit-testing and with temporary highlighting.
+   *         Restore once the root cause is resolved.
+   */
+  // useEffect(() => {
+  //   setEdges((prev) =>
+  //     prev.map((edge) => {
+  //       if (!hideEdgesOfCollapsed) {
+  //         // When disabled, ensure edge is visible
+  //         if (edge.hidden) {
+  //           return { ...edge, hidden: false };
+  //         }
+  //         return edge;
+  //       }
+  //
+  //       // Extract attempt IDs from edge source/target (format: "attempt-123")
+  //       const sourceAttemptId = edge.source?.replace('attempt-', '');
+  //       const targetAttemptId = edge.target?.replace('attempt-', '');
+  //
+  //       // Find the attempts to get their task IDs
+  //       const sourceAttempt = all_attempts.find((a) => a.id === parseInt(sourceAttemptId));
+  //       const targetAttempt = all_attempts.find((a) => a.id === parseInt(targetAttemptId));
+  //
+  //       if (!sourceAttempt || !targetAttempt) return edge;
+  //
+  //       // Check collapse states
+  //       const sourceTaskId = `task-${sourceAttempt.task.id}`;
+  //       const targetTaskId = `task-${targetAttempt.task.id}`;
+  //       const sourceTeamId = `team-${sourceAttempt.task.team}`;
+  //       const targetTeamId = `team-${targetAttempt.task.team}`;
+  //
+  //       const sourceCollapsed = !!collapsedTasks[sourceTaskId] || !!collapsedByTeamId[sourceTeamId];
+  //       const targetCollapsed = !!collapsedTasks[targetTaskId] || !!collapsedByTeamId[targetTeamId];
+  //
+  //       const shouldHide = sourceCollapsed || targetCollapsed;
+  //
+  //       // Only update if the hidden state actually changed
+  //       if (edge.hidden === shouldHide) return edge;
+  //       return { ...edge, hidden: shouldHide };
+  //     }),
+  //   );
+  // }, [hideEdgesOfCollapsed, collapsedByTeamId, collapsedTasks, all_attempts]);
 
-        // Extract attempt IDs from edge source/target (format: "attempt-123")
-        const sourceAttemptId = edge.source?.replace('attempt-', '');
-        const targetAttemptId = edge.target?.replace('attempt-', '');
+  // Temporarily highlight edges (even if currently hidden) and restore their previous state after 1s
+  const highlightEdges = useCallback(
+    (edgeIds) => {
+      if (!edgeIds?.length) return;
 
-        // Find the attempts to get their task IDs
-        const sourceAttempt = all_attempts.find((a) => a.id === parseInt(sourceAttemptId));
-        const targetAttempt = all_attempts.find((a) => a.id === parseInt(targetAttemptId));
+      if (edgeHighlightTimeout.current) {
+        clearTimeout(edgeHighlightTimeout.current);
+        edgeHighlightTimeout.current = null;
+      }
 
-        if (!sourceAttempt || !targetAttempt) return edge;
+      const snapshot = {};
 
-        // Check collapse states
-        const sourceTaskId = `task-${sourceAttempt.task.id}`;
-        const targetTaskId = `task-${targetAttempt.task.id}`;
-        const sourceTeamId = `team-${sourceAttempt.task.team}`;
-        const targetTeamId = `team-${targetAttempt.task.team}`;
+      setEdges((prev) =>
+        prev.map((edge) => {
+          if (!edgeIds.includes(edge.id)) return edge;
 
-        const sourceCollapsed = !!collapsedTasks[sourceTaskId] || !!collapsedByTeamId[sourceTeamId];
-        const targetCollapsed = !!collapsedTasks[targetTaskId] || !!collapsedByTeamId[targetTeamId];
+          snapshot[edge.id] = { hidden: edge.hidden, style: edge.style };
 
-        const shouldHide = sourceCollapsed || targetCollapsed;
+          return {
+            ...edge,
+            hidden: false,
+            style: {
+              ...(edge.style || {}),
+              stroke: '#f43f5e',
+              strokeWidth: 3,
+              opacity: 1,
+            },
+          };
+        }),
+      );
 
-        // Only update if the hidden state actually changed
-        if (edge.hidden === shouldHide) return edge;
-        return { ...edge, hidden: shouldHide };
-      }),
-    );
-  }, [hideEdgesOfCollapsed, collapsedByTeamId, collapsedTasks, all_attempts]);
+      edgeRestoreRef.current = snapshot;
+
+      edgeHighlightTimeout.current = setTimeout(() => {
+        setEdges((prev) =>
+          prev.map((edge) => {
+            const restore = edgeRestoreRef.current?.[edge.id];
+            if (!restore) return edge;
+            return { ...edge, hidden: restore.hidden, style: restore.style };
+          }),
+        );
+
+        edgeRestoreRef.current = null;
+        edgeHighlightTimeout.current = null;
+      }, 3000);
+    },
+    [setEdges],
+  );
 
   // __________LOAD DATA
   useEffect(() => {
@@ -1229,17 +1446,17 @@ export default function OrgAttempts() {
       //LOAD TEAMS (& Tasks through Teams)
       async function loadTeams() {
         // ************** -> ADDED NOW: security log: [loadTeams] ***************** :
-        console.log('[loadTeams] collapsedByTeamId:', collapsedByTeamId);
+        // console.log('[loadTeams] collapsedByTeamId:', collapsedByTeamId);
 
         try {
           //Fetch Teams
           const all_teams_raw = await project_teams_expanded(projectId);
 
-          console.log('[RAW teams keys example]', Object.keys(all_teams_raw?.[0] ?? {}));
-          console.log(
-            '[RAW teams raw line_index]',
-            all_teams_raw.map((t) => ({ id: t.id, li: t.line_index })),
-          );
+          // console.log('[RAW teams keys example]', Object.keys(all_teams_raw?.[0] ?? {}));
+          // console.log(
+          //   '[RAW teams raw line_index]',
+          //   all_teams_raw.map((t) => ({ id: t.id, li: t.line_index })),
+          // );
 
           const all_teams = [...all_teams_raw].sort((a, b) => {
             const ai = a.line_index ?? 999999;
@@ -1248,10 +1465,10 @@ export default function OrgAttempts() {
             return a.id - b.id; // stable fallback
           });
 
-          console.log(
-            '[loadTeams] sortedTeams:',
-            all_teams.map((t) => ({ id: t.id, li: t.line_index })),
-          );
+          // console.log(
+          //   '[loadTeams] sortedTeams:',
+          //   all_teams.map((t) => ({ id: t.id, li: t.line_index })),
+          // );
 
           setAll_Teams(all_teams);
 
@@ -1306,7 +1523,7 @@ export default function OrgAttempts() {
 
           // ************** -> ADDED NOW 4: initialOrder ***************** :
           const initialOrder = updated_group_nodes.map((n) => n.id);
-          console.log('[teamOrder:init]', initialOrder);
+          // console.log('[teamOrder:init]', initialOrder);
           setTeamOrder(initialOrder);
 
           //RENDER TASK NODES
@@ -1411,10 +1628,12 @@ export default function OrgAttempts() {
           id: `attemptdep-${dep.id}`,
           source: `attempt-${dep.vortakt_attempt_id}`,
           target: `attempt-${dep.nachtakt_attempt_id}`,
-          type: 'default',
+          type: 'dependencyEdge',
           animated: true,
-          interactionWidth: 20,
-          style: { strokeWidth: 2 },
+          selectable: true,
+          interactionWidth: 40,
+          style: { strokeWidth: 2, pointerEvents: 'all' },
+          data: { onSelect: handleEdgeSelect },
         }));
 
         setEdges(initialEdges);
@@ -1427,7 +1646,7 @@ export default function OrgAttempts() {
     loadData();
   }, [projectId, navigate, logout, getXFromSlotIndex]); // keep other deps as before
 
-  // Update task nodes when collapsedDays or pixelMap changes
+  // Update task nodes when collapsedDays or pixelMap or mode changes
   useEffect(() => {
     setTaskNodes((prevTasks) =>
       prevTasks.map((task) => ({
@@ -1437,10 +1656,24 @@ export default function OrgAttempts() {
           componentWidth,
           pixelMap,
           collapsedDays,
+          mode,
         },
       })),
     );
-  }, [collapsedDays, pixelMap, componentWidth]);
+  }, [collapsedDays, pixelMap, componentWidth, mode]);
+
+  // Update team nodes when mode changes
+  useEffect(() => {
+    setGroupNodes((prevTeams) =>
+      prevTeams.map((team) => ({
+        ...team,
+        data: {
+          ...team.data,
+          mode,
+        },
+      })),
+    );
+  }, [mode]);
 
   // Automatically collapse/expand empty days when hideEmptyDays button is toggled
   const prevHideEmptyDaysRef = useRef(hideEmptyDays);
@@ -1526,8 +1759,24 @@ export default function OrgAttempts() {
 
   // Merge Nodes
   useEffect(() => {
-    setMergedNodes([headerNode, ...groupNodes, ...taskNodes, ...attempt_nodes]);
-  }, [headerNode, groupNodes, taskNodes, attempt_nodes, dep_setting_selected]);
+    const merged = [headerNode, ...groupNodes, ...taskNodes, ...attempt_nodes];
+
+    // Debug: Check selectable state of team/task nodes in dependency mode
+    if (mode === 'dependency') {
+      const teamNodes = merged.filter((n) => n.type === 'teamNode');
+      const taskNodes = merged.filter((n) => n.type === 'taskNode');
+      if (teamNodes.length > 0 || taskNodes.length > 0) {
+        console.log('[MERGE DEBUG - dependency mode]', {
+          teamSelectable: teamNodes[0]?.selectable,
+          taskSelectable: taskNodes[0]?.selectable,
+          teamDraggable: teamNodes[0]?.draggable,
+          taskDraggable: taskNodes[0]?.draggable,
+        });
+      }
+    }
+
+    setMergedNodes(merged);
+  }, [headerNode, groupNodes, taskNodes, attempt_nodes, dep_setting_selected, mode]);
 
   // onNodesChange
   const onNodesChange = useCallback((changes) => {
@@ -1543,10 +1792,10 @@ export default function OrgAttempts() {
       playSnapSound();
       // ************** -> ADDED NOW 4: onNodeDragStop for group nodes ***************** :
       if (node.type === 'teamNode') {
-        console.log('==========[TEAM DROP]==========');
-        console.log('[TEAM DROP] node:', node.id);
-        console.log('[TEAM DROP] dropY:', node.position.y);
-        console.log('[TEAM DROP] current order:', teamOrder);
+        // console.log('==========[TEAM DROP]==========');
+        // console.log('[TEAM DROP] node:', node.id);
+        // console.log('[TEAM DROP] dropY:', node.position.y);
+        // console.log('[TEAM DROP] current order:', teamOrder);
 
         const filtered = teamOrder.filter((id) => id !== node.id);
 
@@ -1563,19 +1812,19 @@ export default function OrgAttempts() {
           ...filtered.slice(insertIndex),
         ];
 
-        console.log('[TEAM DROP] insertIndex:', insertIndex);
-        console.log('[TEAM DROP] next order:', nextOrder);
+        // console.log('[TEAM DROP] insertIndex:', insertIndex);
+        // console.log('[TEAM DROP] next order:', nextOrder);
 
         setTeamOrder(nextOrder);
 
         const orderIds = nextOrder.map(extractTeamId).filter((x) => x !== null);
 
-        console.log('[TEAM DROP] saving orderIds:', orderIds);
+        // console.log('[TEAM DROP] saving orderIds:', orderIds);
 
         (async () => {
           try {
             const res = await reorder_project_teams(projectId, orderIds);
-            console.log('[TEAM DROP] saved order:', res);
+            // console.log('[TEAM DROP] saved order:', res);
           } catch (err) {
             console.error('[TEAM DROP] failed to save order:', err);
           }
@@ -1620,6 +1869,16 @@ export default function OrgAttempts() {
             );
           }, 250);
 
+          // Highlight blocking edges temporarily (even if hidden)
+          const blockingEdgeIds = incomingEdges
+            .filter((e) => {
+              const srcId = extractAttemptId(e.source);
+              const srcAttempt = all_attempts.find((a) => a.id === srcId);
+              return srcAttempt && srcAttempt.slot_index >= slotIndex;
+            })
+            .map((e) => e.id);
+          highlightEdges(blockingEdgeIds);
+
           playClackSound();
           setErrorMessage('Cannot move: must be after all dependencies');
           setTimeout(() => setErrorMessage(null), 3000);
@@ -1656,6 +1915,16 @@ export default function OrgAttempts() {
               prev.map((n) => (n.id === node.id ? { ...n, data: { ...n.data, shake: false } } : n)),
             );
           }, 250);
+
+          // Highlight blocking edges temporarily (even if hidden)
+          const blockingEdgeIds = outgoingEdges
+            .filter((e) => {
+              const tgtId = extractAttemptId(e.target);
+              const tgtAttempt = all_attempts.find((a) => a.id === tgtId);
+              return tgtAttempt && tgtAttempt.slot_index <= slotIndex;
+            })
+            .map((e) => e.id);
+          highlightEdges(blockingEdgeIds);
 
           playClackSound();
           setErrorMessage('Cannot move: all dependents must be after this');
@@ -1716,7 +1985,7 @@ export default function OrgAttempts() {
       (async () => {
         try {
           const res = await update_attempt_slot_index(attemptId, slotIndex);
-          console.log('Slot index saved:', res);
+          // console.log('Slot index saved:', res);
         } catch (err) {
           console.error('Failed to save slot index:', err);
         }
@@ -1748,7 +2017,7 @@ export default function OrgAttempts() {
       // Only allow connection creation in dependency mode
       if (mode !== 'dependency') return;
 
-      console.log('onConnect fired:', connection);
+      // console.log('onConnect fired:', connection);
 
       const vortaktId = extractAttemptId(connection.source);
       const nachtaktId = extractAttemptId(connection.target);
@@ -1761,17 +2030,19 @@ export default function OrgAttempts() {
       (async () => {
         try {
           const res = await add_attempt_dependency(vortaktId, nachtaktId);
-          console.log('Dependency created:', res);
+          // console.log('Dependency created:', res);
 
           setEdges((eds) =>
             addEdge(
               {
                 ...connection,
                 id: `attemptdep-${res.id}`, // 👈 now we know which DB row this is
-                type: 'default',
+                type: 'dependencyEdge',
                 animated: true,
-                interactionWidth: 20,
-                style: { strokeWidth: 2 },
+                selectable: true,
+                interactionWidth: 40,
+                style: { strokeWidth: 2, pointerEvents: 'all' },
+                data: { onSelect: handleEdgeSelect },
               },
               eds,
             ),
@@ -1792,7 +2063,7 @@ export default function OrgAttempts() {
 
     try {
       const res = await delete_attempt_dependency(selectedDepId);
-      console.log('Dependency deleted:', res);
+      // console.log('Dependency deleted:', res);
 
       // Remove edge from ReactFlow
       setEdges((eds) => eds.filter((e) => e.id !== selectedEdgeId));
@@ -1807,6 +2078,27 @@ export default function OrgAttempts() {
   // ________________________RENDER________________________
   return (
     <>
+      {/* Mode-scoped CSS to allow edge clicks in dependency mode */}
+      <style>
+        {`
+        /* In dependency mode, ignore pointer events on team/task nodes so edges are clickable */
+        .rf-dependency .react-flow__node-teamNode,
+        .rf-dependency .react-flow__node-taskNode {
+          pointer-events: none;
+        }
+        /* Keep attempts interactive (for connecting via handles) */
+        .rf-dependency .react-flow__node-attemptNode {
+          pointer-events: auto;
+        }
+        /* Ensure edges can receive pointer events and clicks target the stroke */
+        .rf-dependency .react-flow__edges {
+          pointer-events: all;
+        }
+        .rf-dependency .react-flow__edge-path {
+          pointer-events: stroke;
+        }
+        `}
+      </style>
       {/* Error Message Overlay */}
       {errorMessage && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
@@ -1851,7 +2143,9 @@ export default function OrgAttempts() {
         {/* IMPORTANT: (height: y_reactflow_size + 50) */}
         <div
           style={{ width: componentWidth, height: y_reactflow_size + SETTINGS_HEIGHT }}
-          className="mx-5 mt-30 mb-5 rounded-xl bg-gray-200 shadow-xl shadow-black/30 sm:mx-10"
+          className={`mx-5 mt-30 mb-5 rounded-xl bg-gray-200 shadow-xl shadow-black/30 sm:mx-10 ${
+            mode === 'dependency' ? 'rf-dependency' : ''
+          }`}
         >
           <div style={{ height: SETTINGS_HEIGHT }} className="relative flex w-full flex-col gap-2">
             <div className="flex h-[40px] gap-2">
@@ -1931,13 +2225,16 @@ export default function OrgAttempts() {
               >
                 {hideCollapsedNodes ? '✓' : ''} Hide Collapsed Nodes
               </Button>
-              <Button
-                className={`!text-black ${hideEdgesOfCollapsed ? '!bg-blue-400' : '!bg-slate-200'}`}
-                variant="contained"
-                onClick={() => setHideEdgesOfCollapsed(!hideEdgesOfCollapsed)}
-              >
-                {hideEdgesOfCollapsed ? '✓' : ''} Hide Edges of Collapsed
-              </Button>
+              {/*
+                TEMP: Hide Edges of Collapsed is disabled during investigation
+                <Button
+                  className={`!text-black ${hideEdgesOfCollapsed ? '!bg-blue-400' : '!bg-slate-200'}`}
+                  variant="contained"
+                  onClick={() => setHideEdgesOfCollapsed(!hideEdgesOfCollapsed)}
+                >
+                  {hideEdgesOfCollapsed ? '✓' : ''} Hide Edges of Collapsed
+                </Button>
+              */}
               <Button
                 className={`!text-black ${hideEmptyDays ? '!bg-blue-400' : '!bg-slate-200'}`}
                 variant="contained"
@@ -1964,11 +2261,17 @@ export default function OrgAttempts() {
               nodes={mergedNodes}
               edges={edges}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeDragStop={onNodeDragStop}
               onNodeClick={(_, node) => {
+                // In dependency mode, ignore node clicks to allow edge selection
+                if (mode === 'dependency') {
+                  return;
+                }
+
                 console.log('Node clicked:', node?.id, 'Mode:', mode);
                 if (mode === 'inspect') {
                   const newId = node?.id || null;
@@ -1995,10 +2298,15 @@ export default function OrgAttempts() {
               deleteKeyCode={['Delete', 'Backspace']}
               minZoom={1}
               onEdgeClick={(evt, edge) => {
-                console.log('EDGE CLICKED:', edge);
+                // Prevent pane click from clearing selection after edge click
+                try {
+                  evt?.stopPropagation?.();
+                } catch (_) {}
+                console.log('EDGE CLICKED:', edge?.id, 'event:', evt);
                 if (edge.id?.startsWith('attemptdep-')) {
                   const depId = parseInt(edge.id.replace('attemptdep-', ''), 10);
                   if (!Number.isNaN(depId)) {
+                    console.log('[EDGE SELECT] Setting selectedDepId:', depId, 'edgeId:', edge.id);
                     setSelectedDepId(depId);
                     setSelectedEdgeId(edge.id);
                   }
@@ -2011,9 +2319,29 @@ export default function OrgAttempts() {
                 [0, 0],
                 [componentWidth, y_reactflow_size],
               ]}
-              onSelectionChange={({ nodes }) => {
+              onSelectionChange={({ nodes, edges: selectedEdges }) => {
                 const first = nodes && nodes.length ? nodes[0] : null;
+                console.log('[onSelectionChange]', {
+                  mode,
+                  selectedNodeId: first?.id,
+                  nodeCount: nodes?.length,
+                  edgeCount: selectedEdges?.length,
+                  isTeamNode: first?.type === 'teamNode',
+                  isTaskNode: first?.type === 'taskNode',
+                  nodeSelectableState: first?.selectable,
+                });
                 setSelectedNodeId(first ? first.id : null);
+
+                if (selectedEdges && selectedEdges.length) {
+                  const e = selectedEdges[0];
+                  if (e?.id?.startsWith?.('attemptdep-')) {
+                    const depId = parseInt(e.id.replace('attemptdep-', ''), 10);
+                    if (!Number.isNaN(depId)) {
+                      setSelectedDepId(depId);
+                      setSelectedEdgeId(e.id);
+                    }
+                  }
+                }
               }}
             ></ReactFlow>
           </div>
