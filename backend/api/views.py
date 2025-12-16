@@ -166,11 +166,16 @@ def get_current_user(request):
 #ProjectSerializer
 class ProjectSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
+    members_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ["id", "name", "description", "created_at", "owner", "owner_username"]
-        read_only_fields = ["id", "created_at", "owner", "owner_username"]
+        fields = ["id", "name", "description", "created_at", "owner", "owner_username", "members_data"]
+        read_only_fields = ["id", "created_at", "owner", "owner_username", "members_data"]
+
+    def get_members_data(self, obj):
+        """Return list of member usernames"""
+        return [{"id": member.id, "username": member.username} for member in obj.members.all()]
 
 
 # TaskSerializer_TeamView

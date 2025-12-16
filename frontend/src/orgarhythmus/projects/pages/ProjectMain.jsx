@@ -301,6 +301,7 @@ export default function ProjectMain() {
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <User size={16} className="text-blue-600" />
+              <span className="mr-1 text-xs text-slate-500">Owner:</span>
               <span className="text-sm font-medium text-slate-700">{project.owner_username}</span>
             </div>
 
@@ -316,6 +317,29 @@ export default function ProjectMain() {
               <span className="font-mono text-sm text-slate-700">ID: {project.id}</span>
             </div>
           </div>
+
+          {/* Members Section */}
+          {project.members_data && project.members_data.length > 0 && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Users size={16} className="text-slate-600" />
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Project Members ({project.members_data.length})
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {project.members_data.map((member) => (
+                  <div
+                    key={member.id}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <span className="text-sm font-medium text-slate-700">{member.username}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </header>
 
         {/* Stats Section */}
