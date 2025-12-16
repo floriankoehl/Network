@@ -306,6 +306,7 @@ function TeamNode({ id, data }) {
         </span>
         <div
           className={` ${data.isCollapsed ? 'left-1 ' : 'top-1 left-1'} absolute cursor-pointer rounded bg-black/50 hover:bg-black/70`}
+          style={{ zIndex: 50, pointerEvents: 'auto' }}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             // ************** -> ADDED NOW: toggleTeamCollapse call while onclick ***************** :
@@ -321,8 +322,8 @@ function TeamNode({ id, data }) {
         </div>
       </div>
 
-      {/* Right area – attempts live visually here, but as separate nodes */}
-      <div className="relative flex-1 p-2" />
+      {/* Right area – allow clicking edges through; keep left bar interactive */}
+      <div className="relative flex-1 p-2" style={{ pointerEvents: 'none' }} />
     </div>
   );
 }
@@ -381,7 +382,7 @@ function AttemptNode({ data, selected }) {
 
   return (
     <div
-      className={`m-2 flex items-center justify-center rounded-md border bg-gray-100 text-xs !text-[15px] font-bold text-black shadow-sm shadow-xl shadow-black/2 transition-all duration-150 hover:bg-gray-700 hover:text-white ${selected ? 'scale-105 border-sky-500 shadow-md shadow-black/30' : 'border-slate-300'} `}
+      className={`m-2 flex items-center justify-center rounded-md border bg-gray-100 text-xs !text-[15px] font-bold text-black shadow-sm shadow-xl shadow-black/2 transition-all duration-150 hover:bg-gray-700 hover:text-white ${selected ? 'scale-105 border-sky-500 shadow-md shadow-black/30' : 'border-slate-300'} ${data.shake ? 'animate-pulse' : ''}`}
       style={{
         width: attemptWidth,
         height: attemptHeight,
@@ -543,22 +544,24 @@ export default function OrgAttempts() {
           setCollapsedDays((prev) => {
             const next = { ...prev, [dayIndex]: !prev[dayIndex] };
 
-            // Recalculate positions only for attempts in slots after the toggled day
+            // Update collapsedDays on all attempts; adjust X only for attempts after toggled day
             setAttemptNodes((prevAttempts) =>
               prevAttempts.map((attempt) => {
                 const slotIndex = attempt.data?.slotIndex || 1;
-                if (slotIndex <= dayIndex) return attempt;
-
-                // Compute X using the updated collapse map without triggering full rerender
-                let x = TASK_SIDEBAR_WIDTH;
-                for (let i = 1; i < slotIndex; i++) {
-                  x += next[i] ? COLLAPSED_DAY_WIDTH : TASK_WIDTH;
+                if (slotIndex > dayIndex) {
+                  // Compute X using the updated collapse map without triggering full rerender
+                  let x = TASK_SIDEBAR_WIDTH;
+                  for (let i = 1; i < slotIndex; i++) {
+                    x += next[i] ? COLLAPSED_DAY_WIDTH : TASK_WIDTH;
+                  }
+                  return {
+                    ...attempt,
+                    position: { ...attempt.position, x },
+                    data: { ...attempt.data, collapsedDays: next },
+                  };
                 }
-                return {
-                  ...attempt,
-                  position: { ...attempt.position, x },
-                  data: { ...attempt.data, collapsedDays: next },
-                };
+                // No position change, but keep render state in sync
+                return { ...attempt, data: { ...attempt.data, collapsedDays: next } };
               }),
             );
 
@@ -865,16 +868,17 @@ export default function OrgAttempts() {
   }, [collapsedByTeamId, teamOrder, groupNodes.length]);
 
   useEffect(() => {
-    console.log('Dep settings selected is now: ', dep_setting_selected);
+    // Mode toggle: when dep_setting_selected is true, we’re in dependency mode -> disable dragging to favor edge selection
+    // When false (Change Group Display), enable dragging for team reorder; keep selectable false to avoid edge overlay issues
+    const draggingEnabled = !dep_setting_selected;
     setGroupNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
-        selectable: !dep_setting_selected,
-        draggable: !dep_setting_selected,
+        selectable: false,
+        draggable: draggingEnabled,
       })),
     );
-    console.log('Dep settings selected is now: ', dep_setting_selected);
-  }, [dep_setting_selected]);
+  }, [dep_setting_selected, collapsedDays, groupNodes.length]);
 
   // __________LOAD DATA
   useEffect(() => {
@@ -1162,11 +1166,41 @@ export default function OrgAttempts() {
       if (node.type !== 'attemptNode') return;
 
       const slotIndex = getSlotIndexFromX(node.position.x);
+
+      // Block dropping onto collapsed days: revert to original slot and pulse
+      if (collapsedDays[slotIndex]) {
+        const originalSlot = node?.data?.slotIndex || 1;
+        const revertX = getXFromSlotIndex(originalSlot);
+
+        setAttemptNodes((prev) =>
+          prev.map((n) =>
+            n.id === node.id
+              ? {
+                  ...n,
+                  position: { ...n.position, x: revertX },
+                  data: { ...n.data, shake: true },
+                }
+              : n,
+          ),
+        );
+
+        // Clear shake after a short delay
+        setTimeout(() => {
+          setAttemptNodes((prev) =>
+            prev.map((n) => (n.id === node.id ? { ...n, data: { ...n.data, shake: false } } : n)),
+          );
+        }, 250);
+
+        return; // do not save slot index when blocked
+      }
+
       const snappedX = getXFromSlotIndex(slotIndex);
 
       setAttemptNodes((prev) =>
         prev.map((n) =>
-          n.id === node.id ? { ...n, position: { ...n.position, x: snappedX } } : n,
+          n.id === node.id
+            ? { ...n, position: { ...n.position, x: snappedX }, data: { ...n.data, slotIndex } }
+            : n,
         ),
       );
 
@@ -1196,7 +1230,7 @@ export default function OrgAttempts() {
       // ************** -> ADDED NOW 4: dependency list update:  ***************** :
       // }, [setMergedNodes]);
     },
-    [teamOrder, groupNodes, collapsedByTeamId],
+    [teamOrder, groupNodes, collapsedByTeamId, collapsedDays, getXFromSlotIndex, getSlotIndexFromX],
   );
 
   // onEdgesChange
