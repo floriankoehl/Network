@@ -160,7 +160,7 @@ export default function OrgaProjects() {
   const navigate = useNavigate();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState('member-projects'); // 'member-projects', 'all-projects'
+  const [activeTab, setActiveTab] = useState('member-projects'); // 'member-projects', 'other-projects'
 
   // Create form state
   const [name, setName] = useState('');
@@ -170,7 +170,7 @@ export default function OrgaProjects() {
 
   // Projects data
   const [memberProjects, setMemberProjects] = useState([]);
-  const [allProjects, setAllProjects] = useState([]);
+  const [otherProjects, setOtherProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Loading states for join/leave actions
@@ -189,7 +189,9 @@ export default function OrgaProjects() {
 
       // All projects where user is owner or member
       setMemberProjects(yourData || []);
-      setAllProjects(allData || []);
+      // Only projects where user is NOT owner and NOT member
+      const filteredOther = (allData || []).filter((p) => !p.is_owner && !p.is_member);
+      setOtherProjects(filteredOther);
     } catch (err) {
       console.error(err);
       setError('Could not load projects.');
@@ -267,7 +269,7 @@ export default function OrgaProjects() {
   }
 
   const hasMemberProjects = memberProjects && memberProjects.length > 0;
-  const hasAllProjects = allProjects && allProjects.length > 0;
+  const hasOtherProjects = otherProjects && otherProjects.length > 0;
 
   return (
     <div className="flex min-h-screen w-screen justify-center bg-gradient-to-b from-slate-50 to-slate-100">
@@ -353,10 +355,10 @@ export default function OrgaProjects() {
             Deine Projekte ({memberProjects.length})
           </TabButton>
           <TabButton
-            active={activeTab === 'all-projects'}
-            onClick={() => setActiveTab('all-projects')}
+            active={activeTab === 'other-projects'}
+            onClick={() => setActiveTab('other-projects')}
           >
-            Neue Projekte ({allProjects.length})
+            Andere Projekte ({otherProjects.length})
           </TabButton>
         </div>
 
@@ -394,19 +396,19 @@ export default function OrgaProjects() {
                       Du bist noch in keinem Projekt Mitglied
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      Wechsel zu "Neue Projekte", um einem beizutreten!
+                      Wechsel zu "Andere Projekte", um einem beizutreten!
                     </p>
                   </div>
                 )}
               </section>
             )}
 
-            {/* All Projects Tab */}
-            {activeTab === 'all-projects' && (
+            {/* Other Projects Tab */}
+            {activeTab === 'other-projects' && (
               <section className="rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-sm backdrop-blur-sm sm:p-5">
-                {hasAllProjects ? (
+                {hasOtherProjects ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {allProjects.map((project) => (
+                    {otherProjects.map((project) => (
                       <ProjectCard
                         key={project.id}
                         project={project}
@@ -423,7 +425,10 @@ export default function OrgaProjects() {
                 ) : (
                   <div className="py-12 text-center">
                     <Folder size={32} className="mx-auto mb-2 text-slate-300" />
-                    <p className="text-sm text-slate-500">Keine Projekte verfügbar</p>
+                    <p className="text-sm text-slate-500">Keine weiteren Projekte verfügbar</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Du bist bereits Mitglied in allen existierenden Projekten!
+                    </p>
                   </div>
                 )}
               </section>
