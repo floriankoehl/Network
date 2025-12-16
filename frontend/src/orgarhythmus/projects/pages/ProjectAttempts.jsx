@@ -482,6 +482,8 @@ function DependencyEdge({
   style,
   data,
 }) {
+  const isDependencyMode = !!(data && data.isDependencyMode);
+  const [isHover, setIsHover] = useState(false);
   const sx = sourceX ?? 0;
   const sy = sourceY ?? 0;
   const tx = targetX ?? 0;
@@ -494,7 +496,14 @@ function DependencyEdge({
   const path = `M ${sx},${sy} C ${c1x},${c1y} ${c2x},${c2y} ${tx},${ty}`;
 
   const stroke = (style && style.stroke) || '#222';
-  const strokeWidth = (style && style.strokeWidth) || 2;
+  const baseStrokeWidth = (style && style.strokeWidth) || 2;
+  const isSelected = !!(data && data.isSelected);
+  const strokeWidth = isSelected
+    ? Math.max(baseStrokeWidth + 3, 5)
+    : isDependencyMode && isHover
+      ? Math.min(baseStrokeWidth + 2, 6)
+      : baseStrokeWidth;
+  const strokeColor = isSelected ? '#0ea5e9' : stroke;
 
   // Compute a good label position along the curve
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -512,56 +521,74 @@ function DependencyEdge({
         className="react-flow__edge-path"
         d={path}
         fill="none"
-        stroke={stroke}
+        stroke={strokeColor}
         strokeWidth={strokeWidth}
         style={{ pointerEvents: 'stroke', ...(style || {}) }}
+        onMouseEnter={isDependencyMode ? () => setIsHover(true) : undefined}
+        onMouseLeave={isDependencyMode ? () => setIsHover(false) : undefined}
       />
-      {/* Invisible, thick interaction path to capture clicks */}
-      <path
-        className="react-flow__edge-path edge-hit"
-        d={path}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={Math.max(24, strokeWidth * 8)}
-        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-        onClick={(e) => {
-          e.stopPropagation?.();
-          if (data && typeof data.onSelect === 'function') {
-            data.onSelect(id);
-          }
-        }}
-      />
-      {/* Small clickable label anchored to the edge */}
-      <EdgeLabelRenderer>
-        <div
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-            pointerEvents: 'all',
-            zIndex: 1000,
-          }}
-          className="edge-label"
-          onClick={(e) => {
-            e.stopPropagation?.();
-            if (data && typeof data.onSelect === 'function') {
-              data.onSelect(id);
-            }
-          }}
-        >
-          <div
-            title="Select dependency"
-            style={{
-              width: 14,
-              height: 14,
-              borderRadius: 8,
-              background: selected ? '#ef4444' : '#64748b',
-              border: '1px solid #fff',
-              boxShadow: '0 0 4px rgba(0,0,0,0.25)',
-              cursor: 'pointer',
+      {isDependencyMode && (
+        <>
+          {/* Invisible, thick interaction path to capture clicks */}
+          <path
+            className="react-flow__edge-path edge-hit"
+            d={path}
+            fill="none"
+            stroke="transparent"
+            strokeWidth={Math.max(60, strokeWidth * 12)}
+            style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+            onClick={(e) => {
+              e.stopPropagation?.();
+              if (data && typeof data.onSelect === 'function') {
+                data.onSelect(id);
+              }
             }}
+            onPointerDown={(e) => e.stopPropagation?.()}
+            onMouseEnter={(e) => {
+              // ensure cursor feedback when hovering anywhere on path
+              const el = e.currentTarget;
+              if (el) el.style.cursor = 'pointer';
+              setIsHover(true);
+            }}
+            onMouseLeave={() => setIsHover(false)}
           />
-        </div>
-      </EdgeLabelRenderer>
+          {/* Small clickable label anchored to the edge */}
+          <EdgeLabelRenderer>
+            <div
+              style={{
+                position: 'absolute',
+                transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                pointerEvents: 'all',
+                zIndex: 1000,
+              }}
+              className="edge-label"
+              onClick={(e) => {
+                e.stopPropagation?.();
+                if (data && typeof data.onSelect === 'function') {
+                  data.onSelect(id);
+                }
+              }}
+            >
+              <div
+                title="Select dependency"
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: 8,
+                  background: isSelected ? '#ef4444' : '#64748b',
+                  border: isSelected ? '2px solid #fbbf24' : '1px solid #fff',
+                  boxShadow: isSelected
+                    ? '0 0 12px rgba(239, 68, 68, 0.8)'
+                    : '0 0 4px rgba(0,0,0,0.25)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  transform: isSelected ? 'scale(1.3)' : 'scale(1)',
+                }}
+              />
+            </div>
+          </EdgeLabelRenderer>
+        </>
+      )}
     </g>
   );
 }
@@ -1282,7 +1309,7 @@ export default function OrgAttempts() {
 
   // Update attempt nodes draggable state based on mode
   useEffect(() => {
-    // In inspect mode, disable dragging for attempt nodes but allow selection
+    // Only disable dragging in inspect mode
     const attemptDraggingEnabled = mode !== 'inspect';
     setAttemptNodes((nodes) =>
       nodes.map((node) => ({
@@ -1327,6 +1354,28 @@ export default function OrgAttempts() {
       }),
     );
   }, [mode, inspectSelectedNodeId]);
+
+  // Keep edges in sync with mode for interactivity/label rendering and selection state
+  useEffect(() => {
+    setEdges((prev) =>
+      prev.map((e) => ({
+        ...e,
+        data: {
+          ...(e.data || {}),
+          isDependencyMode: mode === 'dependency',
+          onSelect: handleEdgeSelect,
+          isSelected: e.id === selectedEdgeId,
+        },
+        animated: true,
+        selectable: true,
+        interactionWidth: mode === 'dependency' ? (e.interactionWidth ?? 40) : e.interactionWidth,
+        style:
+          mode === 'dependency'
+            ? { ...(e.style || {}), pointerEvents: 'all', strokeWidth: e.style?.strokeWidth ?? 2 }
+            : { ...(e.style || {}) },
+      })),
+    );
+  }, [mode, handleEdgeSelect, selectedEdgeId]);
 
   /*
    * TEMPORARILY DISABLED: hideEdgesOfCollapsed effect
@@ -1633,7 +1682,7 @@ export default function OrgAttempts() {
           selectable: true,
           interactionWidth: 40,
           style: { strokeWidth: 2, pointerEvents: 'all' },
-          data: { onSelect: handleEdgeSelect },
+          data: { onSelect: handleEdgeSelect, isDependencyMode: mode === 'dependency' },
         }));
 
         setEdges(initialEdges);
@@ -1782,6 +1831,16 @@ export default function OrgAttempts() {
   const onNodesChange = useCallback((changes) => {
     setMergedNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
+
+  // onNodeDragStart - block dragging entirely in inspect mode
+  const onNodeDragStart = useCallback(
+    (event, node) => {
+      if (mode === 'inspect') {
+        event.preventDefault();
+      }
+    },
+    [mode],
+  );
 
   // onNodeDragStop
   const onNodeDragStop = useCallback(
@@ -2042,7 +2101,7 @@ export default function OrgAttempts() {
                 selectable: true,
                 interactionWidth: 40,
                 style: { strokeWidth: 2, pointerEvents: 'all' },
-                data: { onSelect: handleEdgeSelect },
+                data: { onSelect: handleEdgeSelect, isDependencyMode: true },
               },
               eds,
             ),
@@ -2265,6 +2324,7 @@ export default function OrgAttempts() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
+              onNodeDragStart={onNodeDragStart}
               onNodeDragStop={onNodeDragStop}
               onNodeClick={(_, node) => {
                 // In dependency mode, ignore node clicks to allow edge selection
