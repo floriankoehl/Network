@@ -404,9 +404,12 @@ export async function updateTask(projectId, taskId, payload) {
 //_______________________________________________
 //_______________________________________________
 
-// fetch_all_attempts
-export async function fetch_all_attempts() {
-  const projectId = getCurrentProjectIdFromLocation();
+// fetch_all_attempts (accept projectId to avoid relying on window.location during navigation)
+export async function fetch_all_attempts(projectIdFromParam) {
+  const projectId = projectIdFromParam ?? getCurrentProjectIdFromLocation();
+  if (!projectId) {
+    throw new Error('Missing projectId for fetching attempts');
+  }
   const token = localStorage.getItem('access_token');
 
   if (!token) {
@@ -414,7 +417,7 @@ export async function fetch_all_attempts() {
   }
 
   const res = await fetch(
-    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_attempts_for_this_project`,
+    `${BASE_URL}/api/orgarhythmus/projects/${projectId}/all_attempts_for_this_project/`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

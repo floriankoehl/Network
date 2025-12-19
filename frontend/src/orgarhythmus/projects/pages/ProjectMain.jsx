@@ -40,7 +40,7 @@ export async function project_loader({ params }) {
   const project = await fetch_project_detail(projectId);
   const loaded_teams = await fetchTeamsForProject(projectId);
   const loaded_tasks = await fetchTasksForProject(projectId);
-  const loaded_attempts = await fetch_all_attempts();
+  const loaded_attempts = await fetch_all_attempts(projectId);
 
   return { project, loaded_teams, loaded_tasks, loaded_attempts };
 }
@@ -622,12 +622,19 @@ export default function ProjectMain() {
                       (a.slot_index && a.task?.team),
                   );
 
-                  // Group by date
+                  // Group by date (use local date keys to avoid TZ drift)
                   const attemptsByDate = {};
+                  const fmt = (d) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const da = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${da}`;
+                  };
                   projectAttempts.forEach((attempt) => {
                     if (attempt.slot_index && initialProject.start_date) {
-                      const d = new Date(startDate.getTime() + (attempt.slot_index - 2) * msPerDay);
-                      const dateKey = d.toISOString().split('T')[0];
+                      const d = new Date(startDate.getTime() + (attempt.slot_index - 1) * msPerDay);
+                      d.setHours(0, 0, 0, 0);
+                      const dateKey = fmt(d);
                       if (!attemptsByDate[dateKey]) {
                         attemptsByDate[dateKey] = [];
                       }
@@ -644,18 +651,20 @@ export default function ProjectMain() {
                   }
 
                   return dates.map((date) => {
-                    const dateKey = date.toISOString().split('T')[0];
+                    const dateKey = fmt(date);
                     const dayAttempts = attemptsByDate[dateKey] || [];
-                    const isToday = dateKey === today.toISOString().split('T')[0];
+                    const isToday = dateKey === fmt(today);
+                    const hoveredAttempt = dayAttempts.find((a) => a.id === hoveredAttemptId);
 
                     return (
                       <div
                         key={dateKey}
-                        className={`group flex h-40 flex-col rounded-lg border p-3 transition ${
+                        className={`group relative flex h-40 flex-col rounded-lg border p-3 transition ${
                           dayAttempts.length > 0
                             ? 'border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100'
                             : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
                         }`}
+                        onMouseLeave={() => setHoveredAttemptId(null)}
                       >
                         <div className="mb-2 flex items-center justify-between gap-1">
                           <span
@@ -680,7 +689,6 @@ export default function ProjectMain() {
                                 key={attempt.id}
                                 className="group/item relative"
                                 onMouseEnter={() => setHoveredAttemptId(attempt.id)}
-                                onMouseLeave={() => setHoveredAttemptId(null)}
                               >
                                 <div
                                   className="cursor-pointer truncate rounded px-1.5 py-0.5 text-white shadow-sm transition"
@@ -689,52 +697,52 @@ export default function ProjectMain() {
                                   }}
                                   title={`${attempt.task?.name} - Attempt: ${attempt.name}`}
                                 >
-                                  <span className="block truncate font-medium text-white">
+                                  <span className="block truncate font-medium text-black">
                                     {attempt.task?.name}
                                   </span>
                                 </div>
-
-                                {/* Hover menu */}
-                                {hoveredAttemptId === attempt.id && (
-                                  <div className="absolute top-full right-0 left-0 z-10 mt-1 space-y-1 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/orgarhythmus/projects/${initialProject.id}/teams/${attempt.task?.team?.id}`,
-                                        )
-                                      }
-                                      className="w-full rounded px-2 py-1 text-left text-xs text-slate-700 transition hover:bg-slate-100"
-                                    >
-                                      → Go to Team
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/orgarhythmus/projects/${initialProject.id}/tasks/${attempt.task?.id}`,
-                                        )
-                                      }
-                                      className="w-full rounded px-2 py-1 text-left text-xs text-slate-700 transition hover:bg-slate-100"
-                                    >
-                                      → Go to Task
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        navigate(
-                                          `/orgarhythmus/projects/${initialProject.id}/attempts/${attempt.id}`,
-                                        )
-                                      }
-                                      className="w-full rounded px-2 py-1 text-left text-xs font-medium text-blue-700 transition hover:bg-blue-100"
-                                    >
-                                      → Go to Attempt
-                                    </button>
-                                  </div>
-                                )}
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div className="flex flex-1 items-center justify-center text-xs text-slate-400 italic">
                             No attempts
+                          </div>
+                        )}
+
+                        {/* Hover menu: absolutely positioned within day card, not scrolling */}
+                        {hoveredAttempt && (
+                          <div className="absolute top-10 right-2 z-50 space-y-1 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/orgarhythmus/projects/${initialProject.id}/teams/${hoveredAttempt.task?.team?.id}`,
+                                )
+                              }
+                              className="w-full rounded px-2 py-1 text-left text-xs text-slate-700 transition hover:bg-slate-100"
+                            >
+                              → Go to Team
+                            </button>
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/orgarhythmus/projects/${initialProject.id}/tasks/${hoveredAttempt.task?.id}`,
+                                )
+                              }
+                              className="w-full rounded px-2 py-1 text-left text-xs text-slate-700 transition hover:bg-slate-100"
+                            >
+                              → Go to Task
+                            </button>
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/orgarhythmus/projects/${initialProject.id}/attempts/${hoveredAttempt.id}`,
+                                )
+                              }
+                              className="w-full rounded px-2 py-1 text-left text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                            >
+                              → Go to Attempt
+                            </button>
                           </div>
                         )}
                       </div>
