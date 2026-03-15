@@ -122,7 +122,7 @@ export default function Landing() {
                     >
                         <h1 className="text-4xl font-semibold mb-4">The Roadmap of my Life</h1>
                         <p className="text-lg">
-                            Projects, ideas and experiments that shaped my path so far.
+                            Test Projects, ideas and experiments that shaped my path so far.
                         </p>
 
 
