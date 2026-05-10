@@ -1,3 +1,41 @@
+# name: Deploy to Raspberry Pi
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   deploy:
+#     runs-on: self-hosted
+
+#     steps:
+#       - name: Pull latest code on Raspberry Pi
+#         run: |
+#           cd /home/floriankoehl/Network
+#           git pull
+
+#       - name: Run backend tests (Docker)
+#         run: |
+#           cd /home/floriankoehl/Network
+#           docker compose build backend
+#           docker compose run --rm backend python manage.py test
+
+#       - name: Build frontend and deploy to Nginx
+#         run: |
+#           cd /home/floriankoehl/Network/frontend
+#           npm install
+#           npm run build
+#           rm -rf /var/www/app/*
+#           cp -r dist/* /var/www/app/
+#           sudo systemctl reload nginx
+
+#       - name: Rebuild and restart backend container
+#         run: |
+#           cd /home/floriankoehl/Network
+#           docker compose up --build -d backend
+
+
 name: Deploy to Raspberry Pi
 
 on:
@@ -8,18 +46,11 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
-
     steps:
       - name: Pull latest code on Raspberry Pi
         run: |
           cd /home/floriankoehl/Network
           git pull
-
-      - name: Run backend tests (Docker)
-        run: |
-          cd /home/floriankoehl/Network
-          docker compose build backend
-          docker compose run --rm backend python manage.py test
 
       - name: Build frontend and deploy to Nginx
         run: |
@@ -29,8 +60,3 @@ jobs:
           rm -rf /var/www/app/*
           cp -r dist/* /var/www/app/
           sudo systemctl reload nginx
-
-      - name: Rebuild and restart backend container
-        run: |
-          cd /home/floriankoehl/Network
-          docker compose up --build -d backend
